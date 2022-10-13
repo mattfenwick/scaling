@@ -1,0 +1,14 @@
+allInOne:
+  enabled: true
+
+provisionDataStore:
+  cassandra: false
+
+query:
+  enabled: false
+
+collector:
+  enabled: false
+
+agent:
+  enabled: false

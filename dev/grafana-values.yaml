@@ -1,0 +1,19 @@
+adminPassword: "admin"
+
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  hosts:
+    - scaling.local
+
+sidecar:
+  dashboards:
+    enabled: true
+    provider:
+      allowUiUpdates: true
+  datasources:
+    enabled: true
+
+rbac:
+  pspEnabled: false
+  pspUseAppArmor: false
