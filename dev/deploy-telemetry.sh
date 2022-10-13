@@ -18,31 +18,31 @@ helm upgrade --install my-prom prometheus \
   --namespace "$TELEMETRY_NS"
 
 
-#  # create datasource configuration
-#
-#  kubectl create secret generic grafana-datasource \
-#    --namespace "$TELEMETRY_NS" \
-#    --from-file=./datasource.yaml \
-#    --dry-run \
-#    -o yaml \
-#    | kubectl apply -f -
-#
-#  kubectl patch secret grafana-datasource \
-#    --namespace "$TELEMETRY_NS" \
-#    -p '{"metadata":{"labels":{"grafana_datasource": "1"}}}'
-#
-#  # create dashboard configuration
-#
-#  kubectl create secret generic grafana-dashboards \
-#    --namespace "$TELEMETRY_NS" \
-#    --from-file=./grafana-dashboards \
-#    --dry-run \
-#    -o yaml \
-#    | kubectl apply -f -
-#
-#  kubectl patch secret grafana-dashboards \
-#    --namespace "$TELEMETRY_NS" \
-#    -p '{"metadata":{"labels":{"grafana_dashboard": "1"}}}'
+# create datasource configuration
+
+kubectl create secret generic grafana-datasource \
+  --namespace "$TELEMETRY_NS" \
+  --from-file=./grafana-datasource.yaml \
+  --dry-run=client \
+  -o yaml \
+  | kubectl apply -f -
+
+kubectl patch secret grafana-datasource \
+  --namespace "$TELEMETRY_NS" \
+  -p '{"metadata":{"labels":{"grafana_datasource": "1"}}}'
+
+# create dashboard configuration
+
+kubectl create secret generic grafana-dashboards \
+  --namespace "$TELEMETRY_NS" \
+  --from-file=./grafana-dashboards \
+  --dry-run=client \
+  -o yaml \
+  | kubectl apply -f -
+
+kubectl patch secret grafana-dashboards \
+  --namespace "$TELEMETRY_NS" \
+  -p '{"metadata":{"labels":{"grafana_dashboard": "1"}}}'
 
 # set up grafana
 

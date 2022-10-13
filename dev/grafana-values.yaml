@@ -1,4 +1,4 @@
-adminPassword: "admin"
+adminPassword: "grafana-admin"
 
 ingress:
   enabled: true
