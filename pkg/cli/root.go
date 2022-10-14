@@ -1,42 +1,37 @@
 package cli
 
 import (
-	"fmt"
+	"context"
 	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
+	"github.com/sirupsen/logrus"
+	"os"
 )
 
-func RunRootSchemaCommand() {
-	command := SetupRootSchemaCommand()
-	utils.DoOrDie(errors.Wrapf(command.Execute(), "run root schema command"))
-}
+func Run() {
+	RunVersionCommand()
 
-type RootSchemaFlags struct {
-	Verbosity string
-}
+	config, err := json.ParseFile[Config](os.Args[0])
+	utils.DoOrDie(err)
 
-func SetupRootSchemaCommand() *cobra.Command {
-	flags := &RootSchemaFlags{}
-	command := &cobra.Command{
-		Use:   "scaling",
-		Short: "scaling hacking",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return telemetry.SetUpLogger(flags.Verbosity)
-		},
+	rootContext := context.Background()
+
+	err, cleanup := telemetry.Setup(rootContext, config.LogLevel, config.Mode, config.JaegerURL)
+	defer cleanup()
+	utils.DoOrDie(err)
+
+	switch config.Mode {
+	case "webserver":
+		panic("TODO")
+	case "parser":
+		result := parse.JsonAST("{}")
+		logrus.Infof("%+v", json.MustMarshalToString(result))
+	default:
+		panic(errors.Errorf("invalid mode: %s", config.Mode))
 	}
-
-	command.PersistentFlags().StringVarP(&flags.Verbosity, "verbosity", "v", "info", "log level; one of [info, debug, trace, warn, error, fatal, panic]")
-
-	command.AddCommand(SetupVersionCommand())
-	//command.AddCommand(SetupUploadCommand())
-	//command.AddCommand(setupWebServerCommand())
-	//command.AddCommand(SetupParserCommand())
-	//command.AddCommand(SetupAnalyzeCommand())
-
-	return command
 }
 
 var (
@@ -45,19 +40,6 @@ var (
 	buildTime = "development"
 )
 
-func SetupVersionCommand() *cobra.Command {
-	command := &cobra.Command{
-		Use:   "version",
-		Short: "print out version information",
-		Args:  cobra.ExactArgs(0),
-		Run: func(cmd *cobra.Command, as []string) {
-			RunVersionCommand()
-		},
-	}
-
-	return command
-}
-
 func RunVersionCommand() {
 	jsonString, err := json.MarshalToString(map[string]string{
 		"Version":   version,
@@ -65,5 +47,5 @@ func RunVersionCommand() {
 		"BuildTime": buildTime,
 	})
 	utils.DoOrDie(err)
-	fmt.Printf("scaling version: \n%s\n", jsonString)
+	logrus.Infof("scaling version: \n%s\n", jsonString)
 }

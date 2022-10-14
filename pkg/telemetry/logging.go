@@ -5,10 +5,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func SetUpLogger(logLevelStr string) error {
-	logLevel, err := logrus.ParseLevel(logLevelStr)
+func SetUpLogger(level string) error {
+	logLevel, err := logrus.ParseLevel(level)
 	if err != nil {
-		return errors.Wrapf(err, "unable to parse the specified log level: '%s'", logLevel)
+		return errors.Wrapf(err, "unable to parse the specified log level: '%s'", level)
 	}
 	logrus.SetLevel(logLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{

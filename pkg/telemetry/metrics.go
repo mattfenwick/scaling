@@ -20,10 +20,10 @@ func RecordEventDuration(name string, code int, start time.Time) {
 	durationHistogram.With(labels).Observe(float64(duration / time.Microsecond))
 }
 
-func init() {
+func SetupMetrics(namespace string) {
 	durationHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "scaling",
-		Subsystem: "api", // TODO ?
+		Namespace: namespace,
+		Subsystem: "api",
 		Name:      "duration_histogram_microseconds",
 		Help:      "record duration of API endpoints in microseconds",
 		Buckets:   prometheus.ExponentialBuckets(1, 3, 20),
@@ -31,8 +31,8 @@ func init() {
 	prometheus.MustRegister(durationHistogram)
 
 	keyValCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "scaling",
-		Subsystem: "api", // TODO ?
+		Namespace: namespace,
+		Subsystem: "api",
 		Name:      "keyval_counter",
 		Help:      "event counts by keyval",
 	}, []string{"name", "value"})
