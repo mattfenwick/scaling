@@ -2,11 +2,16 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
+	"github.com/mattfenwick/scaling/pkg/utils"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"time"
 )
 
-func Setup(ctx context.Context, logLevel string, serviceName string, jaegerURL string) (error, func()) {
+func Setup(ctx context.Context, logLevel string, serviceName string, prometheusPort int, jaegerURL string) (error, func()) {
 	cleanup := func() {
 		logrus.Infof("noop tracing cleanup")
 	}
@@ -20,7 +25,8 @@ func Setup(ctx context.Context, logLevel string, serviceName string, jaegerURL s
 
 	// metrics
 	logrus.Infof("setting up metrics for namespace %s", serviceName)
-	SetupMetrics(serviceName) // TODO is this really what we want/
+	CreateMetrics(serviceName) // TODO is this really what we want/
+	SetupPrometheus(prometheusPort)
 
 	// traces
 	logrus.Infof("setting up tracing for jaeger url %s", jaegerURL)
@@ -41,4 +47,21 @@ func Setup(ctx context.Context, logLevel string, serviceName string, jaegerURL s
 	}
 
 	return nil, cleanup
+}
+
+func SetupPrometheus(port int) {
+	addr := fmt.Sprintf(":%d", port)
+
+	serveMux := http.NewServeMux()
+	serveMux.Handle("/metrics", promhttp.HandlerFor(
+		prometheus.DefaultGatherer,
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars. -- only on go 1.17
+			//EnableOpenMetrics: true,
+			Timeout: 10 * time.Second,
+		},
+	))
+	go func() {
+		utils.DoOrDie(http.ListenAndServe(addr, serveMux))
+	}()
 }

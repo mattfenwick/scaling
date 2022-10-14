@@ -6,6 +6,7 @@ import (
 	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
+	"github.com/mattfenwick/scaling/pkg/webserver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -14,19 +15,20 @@ import (
 func Run() {
 	RunVersionCommand()
 
-	config, err := json.ParseFile[Config](os.Args[0])
+	config, err := json.ParseFile[Config](os.Args[1])
 	utils.DoOrDie(err)
 
 	rootContext := context.Background()
 
-	err, cleanup := telemetry.Setup(rootContext, config.LogLevel, config.Mode, config.JaegerURL)
+	err, cleanup := telemetry.Setup(rootContext, config.LogLevel, config.Mode, config.PrometheusPort, config.JaegerURL)
 	defer cleanup()
 	utils.DoOrDie(err)
 
 	switch config.Mode {
 	case "webserver":
-		panic("TODO")
+		webserver.Run(config.Port)
 	case "parser":
+		// TODO
 		result := parse.JsonAST("{}")
 		logrus.Infof("%+v", json.MustMarshalToString(result))
 	default:

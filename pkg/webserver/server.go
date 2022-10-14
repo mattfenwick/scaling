@@ -3,65 +3,57 @@ package webserver
 import (
 	"context"
 	"fmt"
-	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
 	"io"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
-type Function struct {
-	Name string
-	Args []int
-}
-
-type FunctionResult struct {
-	Value int
-}
-
 type Responder interface {
-	RunFunctionHttp(ctx context.Context, function *Function) (*FunctionResult, error)
-
-	NotFound(w http.ResponseWriter, r *http.Request)
-	Error(w http.ResponseWriter, r *http.Request, err error, statusCode int)
+	Respond(ctx context.Context, path string, method string, body []byte, values url.Values) (string, int, error)
 }
 
-func SetupHTTPServer(responder Responder) {
-	handleJob := func(w http.ResponseWriter, r *http.Request) {
+func SetupHTTPServer(responder Responder) *http.ServeMux {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var code int
+		var response string
+
+		start := time.Now()
+		defer telemetry.RecordAPIDuration(r.URL.Path, r.Method, code, start)
+
+		logrus.Infof("handling request: %s to %s", r.Method, r.URL.Path)
 		ctx := r.Context()
 		span := trace.SpanFromContext(ctx)
-		span.AddEvent("handling-function")
+		span.AddEvent("handler")
 
-		logrus.Infof("handling function request")
-		switch r.Method {
-		case "POST":
-			body, err := io.ReadAll(r.Body)
-			if err != nil {
-				logrus.Errorf("unable to read body for RunFunction POST: %s", err.Error())
-				responder.Error(w, r, err, 400)
-				return
-			}
-			logrus.Debugf("request body: <%s>", body)
-
-			f, err := json.Parse[Function](body)
-			if err != nil {
-				logrus.Errorf("unable to ummarshal JSON for RunFunction POST: %s", err.Error())
-				responder.Error(w, r, err, 400)
-				return
-			}
-			jobStatus, err := responder.RunFunctionHttp(ctx, f)
-			if err != nil {
-				http.Error(w, err.Error(), 400)
-			} else {
-				header := w.Header()
-				header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
-				fmt.Fprint(w, json.MustMarshalToString(jobStatus))
-			}
-		default:
-			responder.NotFound(w, r)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			logrus.Errorf("http server error %s with code %d (%s to %s, r.Method, r.URL.Path)", err.Error(), 400, r.Method, r.URL.Path)
+			http.Error(w, err.Error(), 400)
+			return
 		}
+
+		response, code, err = responder.Respond(ctx, r.URL.Path, r.Method, body, r.URL.Query())
+		if err != nil {
+			logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
+			http.Error(w, err.Error(), code)
+		} else if code == 404 {
+			logrus.Errorf("http not found: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
+			http.NotFound(w, r)
+		}
+
+		header := w.Header()
+		header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
+		_, _ = fmt.Fprint(w, response)
 	}
-	http.Handle("/function", otelhttp.NewHandler(http.HandlerFunc(handleJob), "function"))
+
+	serveMux := http.NewServeMux()
+	//serveMux.HandleFunc("/", handler)
+	serveMux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(handler), "handle"))
+	return serveMux
 }
