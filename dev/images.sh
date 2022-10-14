@@ -16,6 +16,8 @@ declare -a IMAGES=(
 
   "quay.io/prometheuscommunity/postgres-exporter:v0.10.0"
 
+  "k8s.gcr.io/ingress-nginx/controller:v1.1.1@sha256:0bc88eb15f9e7f84e8e56c14fa5735aaa488b840983f87bd79b1054190e660de"
+
   "jaegertracing/all-in-one:1.37.0")
 
 
