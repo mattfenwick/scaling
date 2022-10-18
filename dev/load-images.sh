@@ -3,6 +3,8 @@
 set -xv
 set -euo pipefail
 
+PULL_IMAGE=${PULL_IMAGE:-false}
+
 declare -a IMAGES=(
   "grafana/grafana:8.3.4"
   "quay.io/kiwigrid/k8s-sidecar:1.19.2"
@@ -23,7 +25,9 @@ declare -a IMAGES=(
 
 for image in "${IMAGES[@]}"
 do
-  docker pull "$image"
+  if [[ $PULL_IMAGE == true ]]; then
+    docker pull "$image"
+  fi
 
   kind load docker-image "$image"
 done
