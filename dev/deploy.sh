@@ -51,3 +51,5 @@ fi
 
 
 ./deploy-telemetry.sh
+
+./deploy-scaling.sh
