@@ -48,7 +48,7 @@ kubectl patch secret grafana-dashboards \
 
 helm upgrade --install my-grafana grafana \
   --repo https://grafana.github.io/helm-charts \
-  --version 6.40.4 \
+  --version 6.21.2 \
   --debug \
   --namespace "$TELEMETRY_NS" \
   -f grafana-values.yaml
