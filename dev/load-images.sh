@@ -4,7 +4,7 @@ set -xv
 set -euo pipefail
 
 declare -a IMAGES=(
-  "grafana/grafana:9.1.7"
+  "grafana/grafana:8.3.4"
   "quay.io/kiwigrid/k8s-sidecar:1.19.2"
 
   "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.5.0"

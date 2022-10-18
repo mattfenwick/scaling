@@ -8,6 +8,9 @@ TELEMETRY_NS="telemetry"
 APP_NS="scaling"
 
 
+./load-images.sh
+
+
 kubectl create ns "$TELEMETRY_NS" || true
 
 
