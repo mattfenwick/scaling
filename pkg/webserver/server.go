@@ -24,7 +24,9 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 		var response string
 
 		start := time.Now()
-		defer telemetry.RecordAPIDuration(r.URL.Path, r.Method, code, start)
+		defer func() {
+			telemetry.RecordAPIDuration(r.URL.Path, r.Method, code, start)
+		}()
 
 		logrus.Infof("handling request: %s to %s", r.Method, r.URL.Path)
 		ctx := r.Context()
@@ -39,6 +41,7 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 		}
 
 		response, code, err = responder.Respond(ctx, r.URL.Path, r.Method, body, r.URL.Query())
+		logrus.Debugf("response: %s; code: %d; err? %t", response, code, err != nil)
 		if err != nil {
 			logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 			http.Error(w, err.Error(), code)
@@ -48,6 +51,7 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 		}
 
 		header := w.Header()
+		w.WriteHeader(code)
 		header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
 		_, _ = fmt.Fprint(w, response)
 	}

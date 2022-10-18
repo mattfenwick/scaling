@@ -8,7 +8,7 @@ import (
 
 func Run(port int) {
 	addr := fmt.Sprintf(":%d", port)
-	model := &Model{}
+	model := NewModel()
 	serveMux := SetupHTTPServer(model)
 
 	utils.DoOrDie(http.ListenAndServe(addr, serveMux))

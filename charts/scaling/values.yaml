@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   registry: "localhost:5000"
   repository: "scaling"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   version: "latest"
 
 imagePullSecrets: []
