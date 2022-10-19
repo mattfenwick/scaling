@@ -70,7 +70,7 @@ deploy:
           - ../scripts/jaeger-values.yaml
 portForward:
   - resourceType: service
-    resourceName: jaeger-query
+    resourceName: my-hunter-jaeger-query
     namespace: telemetry
     port: 16686
     localPort: 16686

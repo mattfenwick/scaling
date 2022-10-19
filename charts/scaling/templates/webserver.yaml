@@ -1,0 +1,135 @@
+apiVersion: v1
+data:
+  config.json: |
+    {
+      "LogLevel": "{{ .Values.webserver.logLevel }}",
+      "JaegerURL": "{{ .Values.jaegerUrl }}",
+      "Mode": "webserver",
+      "Port": 8765,
+      "PrometheusPort": 9090
+    }
+kind: ConfigMap
+metadata:
+  name: webserver-config
+  labels:
+    {{- include "webserver.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "scaling.fullname" . }}-webserver
+  labels:
+    {{- include "webserver.labels" . | nindent 4 }}
+spec:
+  type: "ClusterIP"
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "webserver.selectorLabels" . | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scaling.fullname" . }}-webserver
+  labels:
+    {{- include "webserver.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "webserver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+      labels:
+        {{- include "webserver.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "webserver.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.webserver.podSecurityContext | nindent 8 }}
+      containers:
+        - name: "webserver"
+          command: ["{{ .Values.webserver.binary }}", "/config/config.json"]
+          securityContext:
+            {{- toYaml .Values.webserver.securityContext | nindent 12 }}
+          image: "{{ .Values.webserver.image }}"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8765
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: http
+          resources:
+            {{- toYaml .Values.webserver.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: webserver-config
+{{- if .Values.webserver.serviceAccount.create -}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "webserver.serviceAccountName" . }}
+  labels:
+    {{- include "scaling.labels" . | nindent 4 }}
+  {{- with .Values.webserver.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+
+#{{- if .Values.webserver.autoscaling.enabled }}
+#apiVersion: autoscaling/v2beta1
+#kind: HorizontalPodAutoscaler
+#metadata:
+#  name: {{ include "scaling.fullname" . }}
+#  labels:
+#    {{- include "scaling.labels" . | nindent 4 }}
+#spec:
+#  scaleTargetRef:
+#    apiVersion: apps/v1
+#    kind: Deployment
+#    name: {{ include "scaling.fullname" . }}-webserver
+#  minReplicas: {{ .Values.webserver.autoscaling.minReplicas }}
+#  maxReplicas: {{ .Values.webserver.autoscaling.maxReplicas }}
+#  metrics:
+#    {{- if .Values.webserver.autoscaling.targetCPUUtilizationPercentage }}
+#    - type: Resource
+#      resource:
+#        name: cpu
+#        targetAverageUtilization: {{ .Values.webserver.autoscaling.targetCPUUtilizationPercentage }}
+#    {{- end }}
+#    {{- if .Values.webserver.autoscaling.targetMemoryUtilizationPercentage }}
+#    - type: Resource
+#      resource:
+#        name: memory
+#        targetAverageUtilization: {{ .Values.webserver.autoscaling.targetMemoryUtilizationPercentage }}
+#    {{- end }}
+#{{- end }}
