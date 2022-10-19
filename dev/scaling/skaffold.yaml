@@ -1,0 +1,44 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: scaling
+requires:
+  - path: ../base
+build:
+  local:
+    concurrency: 0
+    push: true
+  artifacts:
+    - image: webserver
+      context: ../../
+      # where does ko put the binary?  see https://github.com/ko-build/ko#build-an-image
+      #    look under /ko-app/ for built binary
+      ko:
+        fromImage: gcr.io/distroless/base:debug-nonroot
+        dir: cmd
+deploy:
+  helm:
+    releases:
+      - name: postgres
+        repo: https://charts.bitnami.com/bitnami
+        remoteChart: postgresql
+        version: 11.6.12
+        namespace: scaling
+        wait: true
+        overrides:
+          primary:
+            extendedConfiguration: |
+              shared_buffers='1GB'
+              max_connections='200'
+      #          auth:
+      #            username: a
+      #            password: b
+      #            database: c
+      - name: my-scaling
+        chartPath: ../../charts/scaling
+        namespace: scaling
+        valuesFiles:
+          - values.yaml
+        artifactOverrides:
+          webserver:
+            image: webserver

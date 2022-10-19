@@ -1,13 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "scaling.fullname" . }}
+  name: {{ include "scaling.fullname" . }}-webserver
   labels:
     {{- include "scaling.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: 1
   selector:
     matchLabels:
       {{- include "scaling.selectorLabels" . | nindent 6 }}
@@ -16,26 +14,19 @@ spec:
       annotations:
         prometheus.io/port: "9090"
         prometheus.io/scrape: "true"
-      {{- with .Values.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
         {{- include "scaling.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       serviceAccountName: {{ include "scaling.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: "webserver"
-          command: ["./main", "/config/config.json"]
+          command: ["{{ .Values.webserver.binary }}", "/config/config.json"]
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.version }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.webserver.image }}"
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8765
@@ -63,16 +54,4 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ .Values.configMap }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+            name: webserver-config

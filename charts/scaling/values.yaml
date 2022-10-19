@@ -1,11 +1,5 @@
 replicaCount: 1
 
-image:
-  registry: "localhost:5000"
-  repository: "scaling"
-  pullPolicy: Always
-  version: "latest"
-
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -77,4 +71,9 @@ tolerations: []
 
 affinity: {}
 
-configMap: ""
+jaegerUrl: ""
+
+webserver:
+  binary: ""
+  image: "webserver"
+  logLevel: "info"

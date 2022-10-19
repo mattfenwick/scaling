@@ -1,0 +1,81 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: base
+deploy:
+  helm:
+    releases:
+      - name: metrics-server
+        repo: https://kubernetes-sigs.github.io/metrics-server/
+        remoteChart: metrics-server
+        namespace: kube-system
+        version: 3.8.2
+        overrides:
+          args:
+            - "--kubelet-insecure-tls"
+            - "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname"
+            - "--metric-resolution=15s"
+      - name: my-nginx
+        repo: https://kubernetes.github.io/ingress-nginx
+        remoteChart: ingress-nginx
+        namespace: nginx
+        version: 4.0.17
+        wait: true
+        valuesFiles:
+          - ../scripts/nginx-values.yaml
+      - name: my-prom
+        repo: https://prometheus-community.github.io/helm-charts
+        remoteChart: prometheus
+        namespace: telemetry
+        version: 15.16.0
+#        valuesFiles:
+#          - ../scripts/
+      - name: my-grafana
+        repo: https://grafana.github.io/helm-charts
+        remoteChart: grafana
+        namespace: telemetry
+        version: 6.21.2
+        valuesFiles:
+          - ../scripts/grafana-values.yaml
+#      - name: loki-stack
+#        repo: https://grafana.github.io/helm-charts
+#        remoteChart: loki-stack
+#        namespace: telemetry
+#        overrides:
+#          loki:
+#            enabled: true
+#          promtail:
+#            enabled: true
+#            pipelineStages:
+#              - cri: { }
+#              - json:
+#                ?
+#          grafana:
+#            enabled: true
+#            adminPassword: "grafana-admin"
+#            dashboard:
+#              provider:
+#                allowUiUpdates: true
+#              datasources:
+#                enabled: true
+#            sidecar:
+#              datasources:
+#                enabled: true
+      - name: my-hunter
+        repo: https://jaegertracing.github.io/helm-charts
+        remoteChart: jaeger
+        namespace: telemetry
+        version: 0.62.1
+        valuesFiles:
+          - ../scripts/jaeger-values.yaml
+portForward:
+  - resourceType: service
+    resourceName: jaeger-query
+    namespace: telemetry
+    port: 16686
+    localPort: 16686
+#  - resourceType: service
+#    resourceName: loki-stack-grafana
+#    namespace: telemetry
+#    port: 80
+#    localPort: 3000

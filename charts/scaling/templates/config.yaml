@@ -1,0 +1,13 @@
+apiVersion: v1
+data:
+  config.json: |
+    {
+      "LogLevel": "{{ .Values.webserver.logLevel }}",
+      "JaegerURL": "{{ .Values.jaegerUrl }}",
+      "Mode": "webserver",
+      "Port": 8765,
+      "PrometheusPort": 9090
+    }
+kind: ConfigMap
+metadata:
+  name: webserver-config
