@@ -16,6 +16,12 @@ declare -a IMAGES=(
   "prom/pushgateway:v1.4.3"
   "quay.io/prometheus/prometheus:v2.39.1"
 
+  "docker.io/bitnami/postgresql:14.4.0-debian-11-r4"
+
+  "grafana/loki:2.6.1"
+
+  "docker.io/grafana/promtail:2.6.1"
+
   "quay.io/prometheuscommunity/postgres-exporter:v0.10.0"
 
   "k8s.gcr.io/ingress-nginx/controller:v1.1.1@sha256:0bc88eb15f9e7f84e8e56c14fa5735aaa488b840983f87bd79b1054190e660de"
