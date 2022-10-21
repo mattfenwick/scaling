@@ -3,6 +3,7 @@ module github.com/mattfenwick/scaling
 go 1.19
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/mattfenwick/collections v0.2.2
 	github.com/mattfenwick/gunparse v0.0.2
 	github.com/pkg/errors v0.9.1

@@ -25,11 +25,11 @@ deploy:
         version: 11.6.12
         namespace: scaling
         wait: true
-        overrides:
-          primary:
-            extendedConfiguration: |
-              shared_buffers='1GB'
-              max_connections='200'
+#        overrides:
+#          primary:
+#            extendedConfiguration: |
+#              shared_buffers='1GB'
+#              max_connections='200'
       #          auth:
       #            username: a
       #            password: b
