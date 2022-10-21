@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"net/http"
@@ -19,45 +20,41 @@ type Responder interface {
 	DocumentFetch(context.Context, *GetDocumentRequest) (*GetDocumentResponse, error)
 	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
 
-	LivenessCode(context.Context) int
-	ReadinessCode(context.Context) int
+	IsLive(context.Context) bool
+	IsReady(context.Context) bool
 }
 
 func RequestHandler(r *http.Request, process func(ctx context.Context, body string, urlParams url.Values) (any, error)) (int, any, error) {
-	var code int
-	var response any
-
-	start := time.Now()
-	defer func() {
-		telemetry.RecordAPIDuration(r.URL.Path, r.Method, code, start)
-	}()
-
 	logrus.Infof("handling request: %s to %s", r.Method, r.URL.Path)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		code = 400
-		logrus.Errorf("http server error %s with code %d (%s to %s, r.Method, r.URL.Path)", err.Error(), code, r.Method, r.URL.Path)
-		return code, nil, err
+		return 400, nil, err
 	}
 
 	ctx := r.Context()
 	//span := trace.SpanFromContext(ctx)
 	//span.AddEvent("handler")
-	response, err = process(ctx, string(body), r.URL.Query())
-	logrus.Debugf("response: %s; code: %d; err? %t", response, code, err != nil)
+	response, err := process(ctx, string(body), r.URL.Query())
+	logrus.Debugf("response: %s; err? %t", response, err != nil)
 	if err != nil {
-		code = 500
-		logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
-		return code, nil, err
+		return 500, nil, err
 	}
 
-	code = 200
-	return code, response, nil
+	return 200, response, nil
 }
 
 func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, body string, values url.Values) (any, error)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var code int
+		var response any
+		var err error
+
+		start := time.Now()
+		defer func() {
+			telemetry.RecordAPIDuration(r.URL.Path, r.Method, code, start)
+		}()
+
 		if r.ContentLength > maxSize {
 			logrus.Errorf("content length too large")
 			http.Error(w, "content length too large", 400)
@@ -71,7 +68,7 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 			return
 		}
 
-		code, response, err := RequestHandler(r, handler)
+		code, response, err = RequestHandler(r, handler)
 
 		logrus.Debugf("response: %+v; code: %d; err? %t", response, code, err != nil)
 		if err != nil {
@@ -103,13 +100,27 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 	serveMux := http.NewServeMux()
 	//serveMux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(handler), "handle"))
 
-	serveMux.Handle(LivenessPath, otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(responder.LivenessCode(r.Context()))
-	}), "handle liveness"))
+	serveMux.Handle(LivenessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				if responder.IsLive(ctx) {
+					return "", nil
+				} else {
+					return nil, errors.Errorf("not live")
+				}
+			},
+		})), "handle liveness"))
 
-	serveMux.Handle(ReadinessPath, otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(responder.ReadinessCode(r.Context()))
-	}), "handle readiness"))
+	serveMux.Handle(ReadinessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				if responder.IsReady(ctx) {
+					return "", nil
+				} else {
+					return nil, errors.Errorf("not ready")
+				}
+			},
+		})), "handle readiness"))
 
 	serveMux.Handle(DocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){

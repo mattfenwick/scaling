@@ -8,15 +8,15 @@ import (
 
 type Model struct {
 	Documents map[string]string
-	IsLive    bool
-	IsReady   bool
+	Live      bool
+	Ready     bool
 }
 
 func NewModel() *Model {
 	return &Model{
 		Documents: map[string]string{},
-		IsLive:    true,
-		IsReady:   true,
+		Live:      true,
+		Ready:     true,
 	}
 }
 
@@ -87,18 +87,10 @@ func (m *Model) DocumentUnsafeFetchAll(ctx context.Context) (*UnsafeGetDocuments
 	}, nil
 }
 
-func (m *Model) LivenessCode(ctx context.Context) int {
-	if m.IsLive {
-		return 200
-	} else {
-		return 500
-	}
+func (m *Model) IsLive(ctx context.Context) bool {
+	return m.Live
 }
 
-func (m *Model) ReadinessCode(ctx context.Context) int {
-	if m.IsReady {
-		return 200
-	} else {
-		return 500
-	}
+func (m *Model) IsReady(ctx context.Context) bool {
+	return m.Ready
 }

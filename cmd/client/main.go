@@ -33,6 +33,7 @@ func main() {
 
 		allDocs, err := client.UnsafeGetAllDocuments()
 		utils.DoOrDie(err)
+		//logrus.Infof("all docs: %d\n", len(allDocs.Documents))
 		logrus.Infof("all docs: %d\n[%s]\n", len(allDocs.Documents), json.MustMarshalToString(allDocs))
 	}
 
