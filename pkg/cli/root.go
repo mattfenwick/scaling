@@ -29,7 +29,7 @@ func Run() {
 		webserver.Run(config.Port)
 	case "parser":
 		// TODO
-		result := parse.JsonAST("{}")
+		result := parse.JsonObject("{}")
 		logrus.Infof("%+v", json.MustMarshalToString(result))
 	default:
 		panic(errors.Errorf("invalid mode: %s", config.Mode))

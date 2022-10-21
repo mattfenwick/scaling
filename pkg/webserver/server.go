@@ -130,9 +130,11 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 				})
 			},
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
-				return responder.DocumentUpload(ctx, &UploadDocumentRequest{
-					Document: body,
-				})
+				udr, err := json.ParseString[UploadDocumentRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.DocumentUpload(ctx, udr)
 			},
 		})), "handle document"))
 

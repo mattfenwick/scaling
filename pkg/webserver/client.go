@@ -23,7 +23,7 @@ func (c *Client) UploadDocument(request *UploadDocumentRequest) (*UploadDocument
 }
 
 func (c *Client) GetDocument(request *GetDocumentRequest) (*GetDocumentResponse, error) {
-	out, _, err := utils.RestyIssueRequest[GetDocumentResponse](c.Resty, "GET", DocumentsPath, nil, map[string]string{"documentId": request.DocumentId})
+	out, _, err := utils.RestyIssueRequest[GetDocumentResponse](c.Resty, "GET", DocumentsPath, nil, map[string]string{"id": request.DocumentId})
 	return out, err
 }
 

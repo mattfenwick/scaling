@@ -31,6 +31,12 @@ func main() {
 		logrus.Infof("resp: %s", json.MustMarshalToString(resp))
 		logrus.Infof("id: %s", id)
 
+		fetchedDoc, err := client.GetDocument(&webserver.GetDocumentRequest{
+			DocumentId: id,
+		})
+		utils.DoOrDie(err)
+		logrus.Infof("fetched doc: %s", json.MustMarshalToString(fetchedDoc.Document))
+
 		allDocs, err := client.UnsafeGetAllDocuments()
 		utils.DoOrDie(err)
 		//logrus.Infof("all docs: %d\n", len(allDocs.Documents))

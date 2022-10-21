@@ -13,9 +13,9 @@ type GetDocumentRequest struct {
 }
 
 type GetDocumentResponse struct {
-	Document string
+	Document *Document
 }
 
 type UnsafeGetDocumentsResponse struct {
-	Documents map[string]string
+	Documents map[string]*Document
 }

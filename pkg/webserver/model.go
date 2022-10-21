@@ -3,18 +3,29 @@ package webserver
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/mattfenwick/gunparse/pkg"
+	"github.com/mattfenwick/gunparse/pkg/example"
+	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
+type Document struct {
+	Id      string
+	Raw     string
+	Parsed  *example.Object
+	IsValid bool
+}
+
 type Model struct {
-	Documents map[string]string
+	Documents map[string]*Document
 	Live      bool
 	Ready     bool
 }
 
 func NewModel() *Model {
 	return &Model{
-		Documents: map[string]string{},
+		Documents: map[string]*Document{},
 		Live:      true,
 		Ready:     true,
 	}
@@ -61,7 +72,21 @@ func (m *Model) DocumentUpload(ctx context.Context, request *UploadDocumentReque
 	if _, ok := m.Documents[id]; ok {
 		return nil, errors.Errorf("cannot create doc with uuid %s: id already found", id)
 	}
-	m.Documents[id] = request.Document
+
+	logrus.Debugf("attemping to parse object: %s", request.Document)
+	var parseResult pkg.Result[example.ParseError, *pkg.Pair[int, int], rune, *example.Object]
+	parseResult = parse.JsonObject(request.Document)
+	var obj *example.Object
+	if parseResult.Success != nil {
+		obj = parseResult.Success.Value.Result
+	}
+	m.Documents[id] = &Document{
+		Id:      id,
+		Raw:     request.Document,
+		Parsed:  obj,
+		IsValid: parseResult.Success != nil,
+	}
+
 	return &UploadDocumentResponse{
 		DocumentId: id,
 	}, nil

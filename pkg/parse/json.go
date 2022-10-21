@@ -6,7 +6,7 @@ import (
 	"github.com/mattfenwick/gunparse/pkg/example"
 )
 
-func JsonAST(input string) pkg.Result[example.ParseError, *pkg.Pair[int, int], rune, *example.Object] {
+func JsonObject(input string) pkg.Result[example.ParseError, *pkg.Pair[int, int], rune, *example.Object] {
 	return example.ObjectParser.Parse(example.StringToRunes(input), pkg.NewPair[int, int](1, 1))
 }
 
