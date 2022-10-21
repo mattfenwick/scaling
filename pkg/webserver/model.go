@@ -3,7 +3,6 @@ package webserver
 import (
 	"context"
 	"github.com/google/uuid"
-	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/pkg/errors"
 )
 
@@ -56,28 +55,35 @@ func NewModel() *Model {
 //	return json.MustMarshalToString(map[string]string{"status": "TODO"}), 500, nil
 //}
 
-func (m *Model) DocumentUpload(ctx context.Context, doc string) (string, error) {
+func (m *Model) DocumentUpload(ctx context.Context, request *UploadDocumentRequest) (*UploadDocumentResponse, error) {
 	id := uuid.New().String()
 	if _, ok := m.Documents[id]; ok {
-		return "", errors.Errorf("cannot create doc with uuid %s: id already found", id)
+		return nil, errors.Errorf("cannot create doc with uuid %s: id already found", id)
 	}
-	m.Documents[id] = doc
-	return json.MustMarshalToString(map[string]string{"id": id}), nil
+	m.Documents[id] = request.Document
+	return &UploadDocumentResponse{
+		DocumentId: id,
+	}, nil
 }
 
-func (m *Model) DocumentFetch(ctx context.Context, id string) (string, error) {
+func (m *Model) DocumentFetch(ctx context.Context, request *GetDocumentRequest) (*GetDocumentResponse, error) {
+	id := request.DocumentId
 	if id == "" {
-		return "", errors.Errorf("invalid id: empty")
+		return nil, errors.Errorf("invalid id: empty")
 	}
 	doc, ok := m.Documents[id]
 	if !ok {
-		return "", errors.Errorf("document %s not found", id)
+		return nil, errors.Errorf("document %s not found", id)
 	}
-	return json.MustMarshalToString(map[string]string{"document": doc}), nil
+	return &GetDocumentResponse{
+		Document: doc,
+	}, nil
 }
 
-func (m *Model) DocumentUnsafeFetchAll(ctx context.Context) (string, error) {
-	return json.MustMarshalToString(map[string]interface{}{"documents": m.Documents}), nil
+func (m *Model) DocumentUnsafeFetchAll(ctx context.Context) (*UnsafeGetDocumentsResponse, error) {
+	return &UnsafeGetDocumentsResponse{
+		Documents: m.Documents,
+	}, nil
 }
 
 func (m *Model) LivenessCode(ctx context.Context) int {

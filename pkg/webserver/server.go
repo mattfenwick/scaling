@@ -3,6 +3,7 @@ package webserver
 import (
 	"context"
 	"fmt"
+	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
@@ -14,17 +15,17 @@ import (
 )
 
 type Responder interface {
-	DocumentUnsafeFetchAll(context.Context) (string, error)
-	DocumentFetch(context.Context, string) (string, error)
-	DocumentUpload(context.Context, string) (string, error)
+	DocumentUnsafeFetchAll(context.Context) (*UnsafeGetDocumentsResponse, error)
+	DocumentFetch(context.Context, *GetDocumentRequest) (*GetDocumentResponse, error)
+	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
 
 	LivenessCode(context.Context) int
 	ReadinessCode(context.Context) int
 }
 
-func RequestHandler(r *http.Request, process func(ctx context.Context, body string, urlParams url.Values) (string, error)) (int, any, error) {
+func RequestHandler(r *http.Request, process func(ctx context.Context, body string, urlParams url.Values) (any, error)) (int, any, error) {
 	var code int
-	var response string
+	var response any
 
 	start := time.Now()
 	defer func() {
@@ -49,17 +50,13 @@ func RequestHandler(r *http.Request, process func(ctx context.Context, body stri
 		code = 500
 		logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 		return code, nil, err
-	} else if response == "" {
-		code = 404
-		logrus.Errorf("http not found: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
-		return code, nil, nil
 	}
 
 	code = 200
 	return code, response, nil
 }
 
-func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, body string, values url.Values) (string, error)) func(w http.ResponseWriter, r *http.Request) {
+func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, body string, values url.Values) (any, error)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.ContentLength > maxSize {
 			logrus.Errorf("content length too large")
@@ -76,12 +73,13 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 
 		code, response, err := RequestHandler(r, handler)
 
-		logrus.Debugf("response: %s; code: %d; err? %t", response, code, err != nil)
+		logrus.Debugf("response: %+v; code: %d; err? %t", response, code, err != nil)
 		if err != nil {
 			logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 			http.Error(w, err.Error(), code)
 			return
-		} else if code == 404 {
+		} else if response == nil {
+			code = 404
 			logrus.Errorf("http not found: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 			http.NotFound(w, r)
 			return
@@ -90,7 +88,7 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 		header := w.Header()
 		w.WriteHeader(code)
 		header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
-		_, _ = fmt.Fprint(w, response)
+		_, _ = fmt.Fprint(w, json.MustMarshalToString(response))
 	}
 }
 
@@ -107,18 +105,22 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 	}), "handle readiness"))
 
 	serveMux.Handle("/documents", otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
-		map[string]func(ctx context.Context, s string, values url.Values) (string, error){
-			"GET": func(ctx context.Context, s string, values url.Values) (string, error) {
-				return responder.DocumentFetch(ctx, values.Get("id"))
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				return responder.DocumentFetch(ctx, &GetDocumentRequest{
+					DocumentId: values.Get("id"),
+				})
 			},
-			"POST": func(ctx context.Context, s string, values url.Values) (string, error) {
-				return responder.DocumentUpload(ctx, s)
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				return responder.DocumentUpload(ctx, &UploadDocumentRequest{
+					Document: body,
+				})
 			},
 		})), "handle document"))
 
 	serveMux.Handle("/unsafe/documents", otelhttp.NewHandler(http.HandlerFunc(Handler(0,
-		map[string]func(ctx context.Context, s string, values url.Values) (string, error){
-			"GET": func(ctx context.Context, s string, values url.Values) (string, error) {
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
 				return responder.DocumentUnsafeFetchAll(ctx)
 			},
 		})), "handle unsafe document"))

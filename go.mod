@@ -3,6 +3,7 @@ module github.com/mattfenwick/scaling
 go 1.19
 
 require (
+	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/uuid v1.3.0
 	github.com/mattfenwick/collections v0.2.2
 	github.com/mattfenwick/gunparse v0.0.2
@@ -28,7 +29,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.3 // indirect
-	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
