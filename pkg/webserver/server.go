@@ -92,19 +92,26 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 	}
 }
 
+const (
+	LivenessPath        = "/liveness"
+	ReadinessPath       = "/readiness"
+	DocumentsPath       = "/documents"
+	UnsafeDocumentsPath = "/unsafe/documents"
+)
+
 func SetupHTTPServer(responder Responder) *http.ServeMux {
 	serveMux := http.NewServeMux()
 	//serveMux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(handler), "handle"))
 
-	serveMux.Handle("/liveness", otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	serveMux.Handle(LivenessPath, otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(responder.LivenessCode(r.Context()))
 	}), "handle liveness"))
 
-	serveMux.Handle("/readiness", otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	serveMux.Handle(ReadinessPath, otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(responder.ReadinessCode(r.Context()))
 	}), "handle readiness"))
 
-	serveMux.Handle("/documents", otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
+	serveMux.Handle(DocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
 				return responder.DocumentFetch(ctx, &GetDocumentRequest{
@@ -118,7 +125,7 @@ func SetupHTTPServer(responder Responder) *http.ServeMux {
 			},
 		})), "handle document"))
 
-	serveMux.Handle("/unsafe/documents", otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+	serveMux.Handle(UnsafeDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
 				return responder.DocumentUnsafeFetchAll(ctx)

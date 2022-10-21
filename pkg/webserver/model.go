@@ -14,8 +14,9 @@ type Model struct {
 
 func NewModel() *Model {
 	return &Model{
-		IsLive:  true,
-		IsReady: true,
+		Documents: map[string]string{},
+		IsLive:    true,
+		IsReady:   true,
 	}
 }
 
