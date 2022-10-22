@@ -7,6 +7,8 @@ import (
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"net/http"
 	"net/url"
@@ -33,11 +35,16 @@ func RequestHandler(r *http.Request, process func(ctx context.Context, body stri
 	}
 
 	ctx := r.Context()
-	//span := trace.SpanFromContext(ctx)
-	//span.AddEvent("handler")
+	span := trace.SpanFromContext(ctx)
+
+	span.AddEvent("start process")
 	response, err := process(ctx, string(body), r.URL.Query())
+	span.AddEvent("finish process")
+
 	logrus.Debugf("response: %s; err? %t", response, err != nil)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return 500, nil, err
 	}
 
@@ -96,7 +103,7 @@ const (
 	UnsafeDocumentsPath = "/unsafe/documents"
 )
 
-func SetupHTTPServer(responder Responder) *http.ServeMux {
+func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMux {
 	serveMux := http.NewServeMux()
 	//serveMux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(handler), "handle"))
 

@@ -8,6 +8,9 @@ import (
 	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"sync"
 )
 
 type Document struct {
@@ -21,14 +24,32 @@ type Model struct {
 	Documents map[string]*Document
 	Live      bool
 	Ready     bool
+	tp        trace.TracerProvider
+	tracer    trace.Tracer
+	actions   chan func()
 }
 
-func NewModel() *Model {
-	return &Model{
+func NewModel(tp trace.TracerProvider, ctx context.Context) *Model {
+	actions := make(chan func(), 1)
+	m := &Model{
 		Documents: map[string]*Document{},
 		Live:      true,
 		Ready:     true,
+		tp:        tp,
+		tracer:    tp.Tracer("model"),
+		actions:   actions,
 	}
+	go func() {
+		for {
+			select {
+			case f := <-actions:
+				f()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return m
 }
 
 //func (m *Model) Respond(ctx context.Context, path string, method string, body []byte, values url.Values) (string, int, error) {
@@ -68,6 +89,34 @@ func NewModel() *Model {
 //}
 
 func (m *Model) DocumentUpload(ctx context.Context, request *UploadDocumentRequest) (*UploadDocumentResponse, error) {
+	wg := sync.WaitGroup{}
+	var result *UploadDocumentResponse
+	var err error
+	wg.Add(1)
+	action := func() {
+		result, err = m.noncurrentDocumentUpload(ctx, request)
+		wg.Done()
+	}
+
+	_, span := m.tracer.Start(ctx, "run action")
+	defer span.End()
+
+	select {
+	case m.actions <- action:
+		wg.Wait()
+		span.AddEvent("finished action run")
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+		return result, err
+	default:
+		logrus.Warnf("service unavailable")
+		span.SetStatus(codes.Error, "service unavailable")
+		return nil, errors.Errorf("service unavailable")
+	}
+}
+
+func (m *Model) noncurrentDocumentUpload(ctx context.Context, request *UploadDocumentRequest) (*UploadDocumentResponse, error) {
 	id := uuid.New().String()
 	if _, ok := m.Documents[id]; ok {
 		return nil, errors.Errorf("cannot create doc with uuid %s: id already found", id)
@@ -93,6 +142,37 @@ func (m *Model) DocumentUpload(ctx context.Context, request *UploadDocumentReque
 }
 
 func (m *Model) DocumentFetch(ctx context.Context, request *GetDocumentRequest) (*GetDocumentResponse, error) {
+	wg := sync.WaitGroup{}
+	var result *GetDocumentResponse
+	var err error
+	wg.Add(1)
+	action := func() {
+		result, err = m.noncurrentDocumentFetch(ctx, request)
+		wg.Done()
+	}
+
+	_, span := m.tracer.Start(ctx, "run action")
+	defer span.End()
+
+	select {
+	case m.actions <- action:
+		wg.Wait()
+		span.AddEvent("finished action run")
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+		return result, err
+	default:
+		logrus.Warnf("service unavailable")
+		span.SetStatus(codes.Error, "service unavailable")
+		return nil, errors.Errorf("service unavailable")
+	}
+}
+
+func (m *Model) noncurrentDocumentFetch(ctx context.Context, request *GetDocumentRequest) (*GetDocumentResponse, error) {
+	_, childSpan := m.tracer.Start(ctx, "document fetch")
+	defer childSpan.End()
+
 	id := request.DocumentId
 	if id == "" {
 		return nil, errors.Errorf("invalid id: empty")

@@ -7,11 +7,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"time"
 )
 
-func Setup(ctx context.Context, logLevel string, serviceName string, prometheusPort int, jaegerURL string) (error, func()) {
+func Setup(ctx context.Context, logLevel string, serviceName string, prometheusPort int, jaegerURL string) (trace.TracerProvider, error, func()) {
 	cleanup := func() {
 		logrus.Infof("noop tracing cleanup")
 	}
@@ -20,7 +21,7 @@ func Setup(ctx context.Context, logLevel string, serviceName string, prometheusP
 	logrus.Infof("setting up logging for level %s", logLevel)
 	err := SetUpLogger(logLevel)
 	if err != nil {
-		return err, cleanup
+		return nil, err, cleanup
 	}
 
 	// metrics
@@ -30,23 +31,25 @@ func Setup(ctx context.Context, logLevel string, serviceName string, prometheusP
 
 	// traces
 	logrus.Infof("setting up tracing for jaeger url %s", jaegerURL)
+	var tp trace.TracerProvider
 	if jaegerURL == "" {
-		_ = SetUpNoopTracerProvider()
+		tp = SetUpNoopTracerProvider()
 	} else {
-		tp, err := SetUpJaegerTracerProvider(jaegerURL, serviceName)
+		jtp, err := SetUpJaegerTracerProvider(jaegerURL, serviceName)
 		if err != nil {
-			return err, cleanup
+			return nil, err, cleanup
 		}
+		tp = jtp
 
 		cleanup = func() {
 			logrus.Infof("jaeger tracing cleanup")
 			timedContext, timedCancel := context.WithTimeout(ctx, time.Second*5)
 			defer timedCancel()
-			_ = tp.Shutdown(timedContext)
+			_ = jtp.Shutdown(timedContext)
 		}
 	}
 
-	return nil, cleanup
+	return tp, nil, cleanup
 }
 
 func SetupPrometheus(port int) {

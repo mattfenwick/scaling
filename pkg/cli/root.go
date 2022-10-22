@@ -20,13 +20,13 @@ func Run() {
 
 	rootContext := context.Background()
 
-	err, cleanup := telemetry.Setup(rootContext, config.LogLevel, config.Mode, config.PrometheusPort, config.JaegerURL)
+	tp, err, cleanup := telemetry.Setup(rootContext, config.LogLevel, config.Mode, config.PrometheusPort, config.JaegerURL)
 	defer cleanup()
 	utils.DoOrDie(err)
 
 	switch config.Mode {
 	case "webserver":
-		webserver.Run(config.Port)
+		webserver.Run(config.Port, tp)
 	case "parser":
 		// TODO
 		result := parse.JsonObject("{}")
