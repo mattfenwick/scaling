@@ -1,5 +1,7 @@
 package cli
 
+import "github.com/mattfenwick/scaling/pkg/loadgen"
+
 type Config struct {
 	LogLevel       string
 	JaegerURL      string
@@ -11,6 +13,5 @@ type Config struct {
 		ServicePort   int
 	}
 
-	LoadGen struct {
-	}
+	LoadGen loadgen.Config
 }

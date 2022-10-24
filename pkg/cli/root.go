@@ -2,8 +2,9 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"github.com/mattfenwick/collections/pkg/json"
-	"github.com/mattfenwick/scaling/pkg/client"
+	"github.com/mattfenwick/scaling/pkg/loadgen"
 	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
@@ -21,6 +22,10 @@ func Run() {
 	config, err := json.ParseFile[Config](os.Args[2])
 	utils.DoOrDie(err)
 
+	RunWithConfig(mode, config)
+}
+
+func RunWithConfig(mode string, config *Config) {
 	rootContext := context.Background()
 
 	tp, err, cleanup := telemetry.Setup(rootContext, config.LogLevel, mode, config.PrometheusPort, config.JaegerURL)
@@ -31,7 +36,9 @@ func Run() {
 	case "webserver":
 		webserver.Run(config.Webserver.ContainerPort, tp)
 	case "loadgen":
-		utils.DoOrDie(client.RunSmallBatchOfRequests(config.Webserver.Host, config.Webserver.ServicePort))
+		url := fmt.Sprintf("http://%s:%d", config.Webserver.Host, config.Webserver.ServicePort)
+		client := webserver.NewClient(url)
+		loadgen.Cli(client, &config.LoadGen)
 	case "parser":
 		result := parse.JsonObject("{}")
 		logrus.Infof("%+v", json.MustMarshalToString(result))
