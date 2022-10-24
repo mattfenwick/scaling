@@ -14,9 +14,8 @@ import (
 )
 
 type Document struct {
-	Id  string
-	Raw string
-	//ParseTree *example.JsonValue
+	Id     string
+	Raw    string
 	Parsed any
 	Error  string
 }
@@ -61,42 +60,6 @@ func NewModel(tp trace.TracerProvider, ctx context.Context) *Model {
 	return m
 }
 
-//func (m *Model) Respond(ctx context.Context, path string, method string, body []byte, values url.Values) (string, int, error) {
-//	pathPieces := getPathPieces(path)
-//	logrus.Infof("responder: handling request: %s to %s, body %+v, path pieces [%+v]", method, path, body, pathPieces)
-//	if slice.EqualSlicePairwise[string]()(pathPieces, []string{"liveness"}) {
-//		if m.IsLive {
-//			return "liveness", 200, nil
-//		} else {
-//			return "not live", 500, nil
-//		}
-//	} else if slice.EqualSlicePairwise[string]()(pathPieces, []string{"readiness"}) {
-//		if m.IsReady {
-//			return "readiness", 200, nil
-//		} else {
-//			return "not ready", 500, nil
-//		}
-//	} else if slice.EqualSlicePairwise[string]()(pathPieces, []string{"hack", "wait"}) {
-//		secondsString := values.Get("seconds")
-//		seconds, err := strconv.Atoi(secondsString)
-//		if err != nil {
-//			return "invalid seconds", 400, err
-//		}
-//		if seconds < 0 || seconds > 10 {
-//			return "seconds out of bounds", 400, nil
-//		}
-//		time.Sleep(time.Duration(seconds) * time.Second)
-//		return fmt.Sprintf("waited %d seconds", seconds), 200, nil
-//	} else if slice.EqualSlicePairwise[string]()(pathPieces, []string{"hack", "kill"}) {
-//		if m.IsLive {
-//			m.IsLive = false
-//			return "killed", 200, nil
-//		}
-//		return "can't kill, already dead", 400, nil
-//	}
-//	return json.MustMarshalToString(map[string]string{"status": "TODO"}), 500, nil
-//}
-
 func (m *Model) DocumentUpload(ctx context.Context, request *UploadDocumentRequest) (*UploadDocumentResponse, error) {
 	wg := sync.WaitGroup{}
 	var result *UploadDocumentResponse
@@ -136,21 +99,6 @@ func (m *Model) unsafeDocumentUpload(ctx context.Context, request *UploadDocumen
 
 	parsed, parseErr := json.ParseString[any](request.Document)
 
-	//parseResult := parse.JsonValue(request.Document)
-
-	//var jsonValue *example.JsonValue
-	//if parseResult.Success != nil {
-	//	jsonValue = parseResult.Success.Value.Result
-	//	if parseErr != nil {
-	//		logrus.Errorf("raw: %s\ntree: %s\nerror: %s\n\n", request.Document, json.MustMarshalToString(parseResult.Success.Value.Result), parseErr.Error())
-	//		return nil, errors.Errorf("document inconsistency: successfully parsed tree, but unable to parse into JsonValue")
-	//	}
-	//} else {
-	//	if parseErr == nil {
-	//		logrus.Errorf("raw: %s\nerror: %s\nJsonValue: %s\n\n", request.Document, json.MustMarshalToString(parseResult.Error.Value), json.MustMarshalToString(parsed))
-	//		return nil, errors.Errorf("document inconsistency: unable to parse tree, but successfully parsed into JsonValue")
-	//	}
-	//}
 	errorString := ""
 	var derefedParsed any
 	if parseErr != nil {
@@ -160,9 +108,8 @@ func (m *Model) unsafeDocumentUpload(ctx context.Context, request *UploadDocumen
 	}
 
 	m.Documents[id] = &Document{
-		Id:  id,
-		Raw: request.Document,
-		//ParseTree: jsonValue,
+		Id:     id,
+		Raw:    request.Document,
 		Parsed: derefedParsed,
 		Error:  errorString,
 	}

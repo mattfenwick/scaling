@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/mattfenwick/scaling/pkg/loadgen"
-	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/mattfenwick/scaling/pkg/webserver"
@@ -39,10 +38,6 @@ func RunWithConfig(mode string, config *Config) {
 		url := fmt.Sprintf("http://%s:%d", config.Webserver.Host, config.Webserver.ServicePort)
 		client := webserver.NewClient(url)
 		loadgen.Cli(client, &config.LoadGen)
-	case "parser":
-		result := parse.JsonObject("{}")
-		logrus.Infof("%+v", json.MustMarshalToString(result))
-		panic(errors.Errorf("TODO"))
 	default:
 		panic(errors.Errorf("invalid mode: %s", mode))
 	}
