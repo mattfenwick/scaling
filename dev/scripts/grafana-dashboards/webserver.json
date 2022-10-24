@@ -22,7 +22,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 3,
-  "iteration": 1666387269385,
+  "iteration": 1666387269399,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -37,8 +37,8 @@
       },
       "dataFormat": "tsbuckets",
       "gridPos": {
-        "h": 9,
-        "w": 12,
+        "h": 15,
+        "w": 24,
         "x": 0,
         "y": 0
       },
@@ -56,10 +56,12 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "exemplar": true,
+          "exemplar": false,
           "expr": "sum by (le) (rate(webserver_api_duration_histogram_milliseconds_bucket{code=~\"$code\", method=~\"$method\", path=~\"$path\"}[5m])) ",
           "format": "heatmap",
+          "instant": false,
           "interval": "",
+          "intervalFactor": 10,
           "legendFormat": "{{le}}",
           "refId": "A"
         }
@@ -74,6 +76,7 @@
         "show": true
       },
       "yAxis": {
+        "decimals": 3,
         "format": "ms",
         "logBase": 1,
         "show": true
@@ -88,7 +91,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -111,7 +114,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -134,7 +137,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -158,13 +161,13 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Webserver",
   "uid": "ZZ1598S4k",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
