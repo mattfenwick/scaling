@@ -8,6 +8,7 @@ import (
 
 var keyValCounter *prometheus.CounterVec
 var apiDurationHistogram *prometheus.HistogramVec
+var eventLoopDurationHistogram *prometheus.HistogramVec
 
 func RecordKeyValEvent(name string, value string) {
 	labels := prometheus.Labels{"name": name, "value": value}
@@ -20,6 +21,12 @@ func RecordAPIDuration(path string, method string, code int, start time.Time) {
 	apiDurationHistogram.With(labels).Observe(float64(duration / time.Millisecond))
 }
 
+func RecordEventLoopDuration(name string, err error, start time.Time) {
+	duration := time.Since(start)
+	labels := prometheus.Labels{"name": name, "isError": fmt.Sprintf("%t", err != nil)}
+	eventLoopDurationHistogram.With(labels).Observe(float64(duration / time.Millisecond))
+}
+
 func CreateMetrics(namespace string) {
 	apiDurationHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: namespace,
@@ -29,6 +36,15 @@ func CreateMetrics(namespace string) {
 		Buckets:   prometheus.ExponentialBuckets(1, 2, 20),
 	}, []string{"path", "method", "code"})
 	prometheus.MustRegister(apiDurationHistogram)
+
+	eventLoopDurationHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: namespace,
+		Subsystem: "api",
+		Name:      "event_loop_duration_histogram_milliseconds",
+		Help:      "record duration of event loop handler",
+		Buckets:   prometheus.ExponentialBuckets(1, 2, 20),
+	}, []string{"name", "isError"})
+	prometheus.MustRegister(eventLoopDurationHistogram)
 
 	keyValCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,

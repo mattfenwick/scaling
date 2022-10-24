@@ -11,7 +11,7 @@ data:
         "ServicePort": 80
       },
       "Loadgen": {
-    
+        "Mode": "canned"
       }
     }
 kind: ConfigMap

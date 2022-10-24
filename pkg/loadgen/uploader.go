@@ -51,7 +51,7 @@ func (u *Uploader) RunCannedUploads() error {
 
 		logrus.Infof("fetched doc: %s", json.MustMarshalToString(fetchedDoc.Document))
 
-		allDocs, err := u.Client.UnsafeGetAllDocuments()
+		allDocs, err := u.Client.GetAllDocuments()
 		if err != nil {
 			return err
 		}

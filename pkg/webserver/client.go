@@ -27,7 +27,7 @@ func (c *Client) GetDocument(request *GetDocumentRequest) (*GetDocumentResponse,
 	return out, err
 }
 
-func (c *Client) UnsafeGetAllDocuments() (*UnsafeGetDocumentsResponse, error) {
-	out, _, err := utils.RestyIssueRequest[UnsafeGetDocumentsResponse](c.Resty, "GET", UnsafeDocumentsPath, nil, nil)
+func (c *Client) GetAllDocuments() (*GetAllDocumentsResponse, error) {
+	out, _, err := utils.RestyIssueRequest[GetAllDocumentsResponse](c.Resty, "GET", AllDocumentsPath, nil, nil)
 	return out, err
 }

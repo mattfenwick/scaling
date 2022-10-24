@@ -18,7 +18,8 @@ import (
 )
 
 type Responder interface {
-	DocumentUnsafeFetchAll(context.Context) (*UnsafeGetDocumentsResponse, error)
+	DocumentsFetchAll(context.Context) (*GetAllDocumentsResponse, error)
+	DocumentsFind(context.Context, *FindDocumentsRequest) (*FindDocumentsResponse, error)
 	DocumentFetch(context.Context, *GetDocumentRequest) (*GetDocumentResponse, error)
 	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
 
@@ -97,10 +98,11 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 }
 
 const (
-	LivenessPath        = "/liveness"
-	ReadinessPath       = "/readiness"
-	DocumentsPath       = "/documents"
-	UnsafeDocumentsPath = "/unsafe/documents"
+	LivenessPath      = "/liveness"
+	ReadinessPath     = "/readiness"
+	DocumentsPath     = "/documents"
+	AllDocumentsPath  = "/documents/all"
+	FindDocumentsPath = "/documents/find"
 )
 
 func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMux {
@@ -145,12 +147,23 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle document"))
 
-	serveMux.Handle(UnsafeDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+	serveMux.Handle(AllDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				return responder.DocumentUnsafeFetchAll(ctx)
+				return responder.DocumentsFetchAll(ctx)
 			},
-		})), "handle unsafe document"))
+		})), "handle fetch all documents"))
+
+	serveMux.Handle(FindDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				fdr, err := json.ParseString[FindDocumentsRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.DocumentsFind(ctx, fdr)
+			},
+		})), "handle find documents"))
 
 	return serveMux
 }

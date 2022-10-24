@@ -10,6 +10,10 @@ func JsonObject(input string) pkg.Result[example.ParseError, *pkg.Pair[int, int]
 	return example.ObjectParser.Parse(example.StringToRunes(input), pkg.NewPair[int, int](1, 1))
 }
 
+func JsonValue(input string) pkg.Result[example.ParseError, *pkg.Pair[int, int], rune, *example.JsonValue] {
+	return example.JsonParser.Parse(example.StringToRunes(input), pkg.NewPair[int, int](1, 1))
+}
+
 func SerializeObject(obj *example.Object) string {
 	//simpleTree := SerializeObjectHelper(obj)
 	return json.MustMarshalToString(obj)
