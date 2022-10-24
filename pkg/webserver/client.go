@@ -13,7 +13,7 @@ type Client struct {
 func NewClient(url string) *Client {
 	return &Client{
 		URL:   url,
-		Resty: resty.New().SetBaseURL(url),
+		Resty: resty.New().SetBaseURL(url).SetTransport(utils.OtelTransport()),
 	}
 }
 

@@ -1,10 +1,14 @@
 package loadgen
 
 import (
+	"context"
 	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/mattfenwick/scaling/pkg/webserver"
 	"github.com/sirupsen/logrus"
+	"math/rand"
+	"time"
 )
 
 type Uploader struct {
@@ -70,5 +74,34 @@ func (u *Uploader) RunRandomUploadsByKeyCount(keyCounts []int) {
 		utils.DoOrDie(err)
 
 		logrus.Debugf("resp: %s", json.MustMarshalToString(resp))
+	}
+}
+
+func (u *Uploader) RunContinuous(ctx context.Context, keyCounts []int, workers int, pauseMilliseconds int) {
+	for workerIdMutable := 0; workerIdMutable < workers; workerIdMutable++ {
+		go func(workerId int) {
+			time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+			for i := rand.Intn(len(keyCounts)); ; i++ {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				keys := keyCounts[i%len(keyCounts)]
+				start := time.Now()
+				resp, err := u.Client.UploadDocument(&webserver.UploadDocumentRequest{
+					Document: json.MustMarshalToString(GenerateByNumberOfKeys(keys)),
+				})
+				telemetry.RecordClientApiRequestDuration("upload", err, start)
+				if err == nil {
+					logrus.Infof("worker %d generated document %d, key count %d: %s", workerId, i, keys, resp.DocumentId)
+				} else {
+					logrus.Errorf("worker %d unable to generate document %d, key count %d: %s", workerId, i, keys, err.Error())
+				}
+
+				time.Sleep(time.Duration(pauseMilliseconds) * time.Millisecond)
+			}
+		}(workerIdMutable)
 	}
 }

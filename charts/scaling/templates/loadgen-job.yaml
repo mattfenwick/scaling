@@ -1,4 +1,4 @@
-{{ if .Values.loadgen.enabled }}
+{{ if .Values.loadgen.job.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -6,7 +6,7 @@ metadata:
     helm.sh/hook-weight: "-1"
     helm.sh/hook: post-upgrade, post-install
   labels:
-    {{- include "loadgen.labels" . | nindent 4 }}
+    {{- include "loadgen.job.labels" . | nindent 4 }}
   name: loadgen
 spec:
   backoffLimit: 1
@@ -15,7 +15,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "loadgen.selectorLabels" . | nindent 8 }}
+        {{- include "loadgen.job.selectorLabels" . | nindent 8 }}
     spec:
       containers:
       - command: ["{{ .Values.loadgen.binary }}"]

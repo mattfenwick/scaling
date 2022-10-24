@@ -95,7 +95,8 @@ func (m *Model) unsafeDocumentUpload(ctx context.Context, request *UploadDocumen
 		return nil, errors.Errorf("cannot create doc with uuid %s: id already found", id)
 	}
 
-	logrus.Debugf("attemping to parse object: %s", request.Document)
+	logrus.Debugf("attempting to parse object of length %d", len(request.Document))
+	logrus.Tracef("attempting to parse object: %s", request.Document)
 
 	parsed, parseErr := json.ParseString[any](request.Document)
 

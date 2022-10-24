@@ -9,6 +9,7 @@ import (
 var keyValCounter *prometheus.CounterVec
 var apiDurationHistogram *prometheus.HistogramVec
 var eventLoopDurationHistogram *prometheus.HistogramVec
+var clientApiRequestDurationHistogram *prometheus.HistogramVec
 
 func RecordKeyValEvent(name string, value string) {
 	labels := prometheus.Labels{"name": name, "value": value}
@@ -25,6 +26,12 @@ func RecordEventLoopDuration(name string, err error, start time.Time) {
 	duration := time.Since(start)
 	labels := prometheus.Labels{"name": name, "isError": fmt.Sprintf("%t", err != nil)}
 	eventLoopDurationHistogram.With(labels).Observe(float64(duration / time.Millisecond))
+}
+
+func RecordClientApiRequestDuration(name string, err error, start time.Time) {
+	duration := time.Since(start)
+	labels := prometheus.Labels{"name": name, "isError": fmt.Sprintf("%t", err != nil)}
+	clientApiRequestDurationHistogram.With(labels).Observe(float64(duration / time.Millisecond))
 }
 
 func CreateMetrics(namespace string) {
@@ -45,6 +52,15 @@ func CreateMetrics(namespace string) {
 		Buckets:   prometheus.ExponentialBuckets(1, 2, 20),
 	}, []string{"name", "isError"})
 	prometheus.MustRegister(eventLoopDurationHistogram)
+
+	clientApiRequestDurationHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: namespace,
+		Subsystem: "client",
+		Name:      "request_duration_histogram_milliseconds",
+		Help:      "record duration of requests to APIs from the client side",
+		Buckets:   prometheus.ExponentialBuckets(1, 2, 20),
+	}, []string{"name", "isError"})
+	prometheus.MustRegister(clientApiRequestDurationHistogram)
 
 	keyValCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,

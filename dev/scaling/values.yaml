@@ -3,7 +3,10 @@ logLevel: "debug"
 
 loadgen:
   binary: "/ko-app/cmd"
-  enabled: true
+  job:
+    enabled: false
+  deployment:
+    enabled: true
 
 webserver:
   binary: "/ko-app/cmd"

@@ -39,8 +39,18 @@ logLevel: "info"
 
 
 loadgen:
+  job:
+    enabled: false
+  deployment:
+    enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
   binary: ""
-  enabled: false
   image: "webserver"
 
 
