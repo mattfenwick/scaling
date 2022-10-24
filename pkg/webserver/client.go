@@ -31,3 +31,8 @@ func (c *Client) GetAllDocuments() (*GetAllDocumentsResponse, error) {
 	out, _, err := utils.RestyIssueRequest[GetAllDocumentsResponse](c.Resty, "GET", AllDocumentsPath, nil, nil)
 	return out, err
 }
+
+func (c *Client) FindDocuments(request *FindDocumentsRequest) (*FindDocumentsResponse, error) {
+	out, _, err := utils.RestyIssueRequest[FindDocumentsResponse](c.Resty, "POST", FindDocumentsPath, request, nil)
+	return out, err
+}

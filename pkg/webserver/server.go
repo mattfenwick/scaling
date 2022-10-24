@@ -22,6 +22,7 @@ type Responder interface {
 	DocumentsFind(context.Context, *FindDocumentsRequest) (*FindDocumentsResponse, error)
 	DocumentFetch(context.Context, *GetDocumentRequest) (*GetDocumentResponse, error)
 	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
+	Dump(ctx context.Context) (string, error)
 
 	IsLive(context.Context) bool
 	IsReady(context.Context) bool
@@ -42,7 +43,6 @@ func RequestHandler(r *http.Request, process func(ctx context.Context, body stri
 	response, err := process(ctx, string(body), r.URL.Query())
 	span.AddEvent("finish process")
 
-	logrus.Debugf("response: %s; err? %t", response, err != nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -78,7 +78,7 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 
 		code, response, err = RequestHandler(r, handler)
 
-		logrus.Debugf("response: %+v; code: %d; err? %t", response, code, err != nil)
+		logrus.Debugf("response code: %d; err? %t", code, err != nil)
 		if err != nil {
 			logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 			http.Error(w, err.Error(), code)
@@ -93,7 +93,15 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 		header := w.Header()
 		w.WriteHeader(code)
 		header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
-		_, _ = fmt.Fprint(w, json.MustMarshalToString(response))
+		body := json.MustMarshalToString(response)
+		n, err := fmt.Fprint(w, body)
+		if err != nil {
+			logrus.Errorf("unable to print response body: %s", err.Error())
+		} else if n < len(body) {
+			logrus.Errorf("failed to print full body: %d / %d", n, len(body))
+		} else {
+			logrus.Infof("wrote %d / %d bytes to response successfully", n, len(body))
+		}
 	}
 }
 
@@ -103,13 +111,14 @@ const (
 	DocumentsPath     = "/documents"
 	AllDocumentsPath  = "/documents/all"
 	FindDocumentsPath = "/documents/find"
+	DumpPath          = "/dump"
 )
 
 func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMux {
 	serveMux := http.NewServeMux()
 	//serveMux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(handler), "handle"))
 
-	serveMux.Handle(LivenessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
+	serveMux.Handle(LivenessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
 				if responder.IsLive(ctx) {
@@ -120,7 +129,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle liveness"))
 
-	serveMux.Handle(ReadinessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
+	serveMux.Handle(ReadinessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
 				if responder.IsReady(ctx) {
@@ -154,7 +163,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle fetch all documents"))
 
-	serveMux.Handle(FindDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+	serveMux.Handle(FindDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
 				fdr, err := json.ParseString[FindDocumentsRequest](body)
@@ -164,6 +173,13 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.DocumentsFind(ctx, fdr)
 			},
 		})), "handle find documents"))
+
+	serveMux.Handle(DumpPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				return responder.Dump(ctx)
+			},
+		})), "handle dump"))
 
 	return serveMux
 }

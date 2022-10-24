@@ -4,8 +4,6 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/mattfenwick/collections/pkg/json"
-	"github.com/mattfenwick/gunparse/pkg/example"
-	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,11 +14,11 @@ import (
 )
 
 type Document struct {
-	Id        string
-	Raw       string
-	ParseTree *example.JsonValue
-	Parsed    any
-	IsValid   bool
+	Id  string
+	Raw string
+	//ParseTree *example.JsonValue
+	Parsed any
+	Error  string
 }
 
 type Action struct {
@@ -49,6 +47,7 @@ func NewModel(tp trace.TracerProvider, ctx context.Context) *Model {
 	}
 	go func() {
 		for {
+			//logrus.Debugf("state: %s", json.MustMarshalToString(m))
 			select {
 			case a := <-actions:
 				start := time.Now()
@@ -137,29 +136,35 @@ func (m *Model) unsafeDocumentUpload(ctx context.Context, request *UploadDocumen
 
 	parsed, parseErr := json.ParseString[any](request.Document)
 
-	//var parseResult pkg.Result[example.ParseError, *pkg.Pair[int, int], rune, *example.JsonValue]
-	parseResult := parse.JsonValue(request.Document)
+	//parseResult := parse.JsonValue(request.Document)
 
-	var jsonValue *example.JsonValue
-	if parseResult.Success != nil {
-		jsonValue = parseResult.Success.Value.Result
-		if parseErr != nil {
-			logrus.Errorf("raw: %s\ntree: %s\nerror: %s\n\n", request.Document, json.MustMarshalToString(parseResult.Success.Value.Result), parseErr.Error())
-			return nil, errors.Errorf("document inconsistency: successfully parsed tree, but unable to parse into JsonValue")
-		}
+	//var jsonValue *example.JsonValue
+	//if parseResult.Success != nil {
+	//	jsonValue = parseResult.Success.Value.Result
+	//	if parseErr != nil {
+	//		logrus.Errorf("raw: %s\ntree: %s\nerror: %s\n\n", request.Document, json.MustMarshalToString(parseResult.Success.Value.Result), parseErr.Error())
+	//		return nil, errors.Errorf("document inconsistency: successfully parsed tree, but unable to parse into JsonValue")
+	//	}
+	//} else {
+	//	if parseErr == nil {
+	//		logrus.Errorf("raw: %s\nerror: %s\nJsonValue: %s\n\n", request.Document, json.MustMarshalToString(parseResult.Error.Value), json.MustMarshalToString(parsed))
+	//		return nil, errors.Errorf("document inconsistency: unable to parse tree, but successfully parsed into JsonValue")
+	//	}
+	//}
+	errorString := ""
+	var derefedParsed any
+	if parseErr != nil {
+		errorString = parseErr.Error()
 	} else {
-		if parseErr == nil {
-			logrus.Errorf("raw: %s\nerror: %s\nJsonValue: %s\n\n", request.Document, json.MustMarshalToString(parseResult.Error.Value), json.MustMarshalToString(parsed))
-			return nil, errors.Errorf("document inconsistency: unable to parse tree, but successfully parsed into JsonValue")
-		}
+		derefedParsed = *parsed
 	}
 
 	m.Documents[id] = &Document{
-		Id:        id,
-		Raw:       request.Document,
-		ParseTree: jsonValue,
-		Parsed:    parsed,
-		IsValid:   parseResult.Success != nil,
+		Id:  id,
+		Raw: request.Document,
+		//ParseTree: jsonValue,
+		Parsed: derefedParsed,
+		Error:  errorString,
 	}
 
 	return &UploadDocumentResponse{
@@ -221,11 +226,10 @@ func (m *Model) DocumentsFetchAll(ctx context.Context) (*GetAllDocumentsResponse
 	action := func() error {
 		for id, doc := range m.Documents {
 			docs[id] = &Document{
-				Id:        doc.Id,
-				Raw:       doc.Raw,
-				ParseTree: doc.ParseTree,
-				Parsed:    doc.Parsed,
-				IsValid:   doc.IsValid,
+				Id:     doc.Id,
+				Raw:    doc.Raw,
+				Parsed: doc.Parsed,
+				Error:  doc.Error,
 			}
 		}
 		wg.Done()
@@ -234,6 +238,7 @@ func (m *Model) DocumentsFetchAll(ctx context.Context) (*GetAllDocumentsResponse
 
 	select {
 	case m.actions <- &Action{F: action, Name: "fetch all documents"}:
+		wg.Wait()
 		return &GetAllDocumentsResponse{
 			Documents: docs,
 		}, nil
@@ -249,6 +254,7 @@ func (m *Model) DocumentsFind(ctx context.Context, request *FindDocumentsRequest
 
 	action := func() error {
 		for id, doc := range m.Documents {
+			logrus.Debugf("looking for key '%s' in document %s", request.Key, id)
 			paths := FindKeyInJson(doc.Parsed, []any{}, request.Key)
 			if len(paths) > 0 {
 				items = append(items, &FindDocumentsResponseItem{
@@ -263,11 +269,32 @@ func (m *Model) DocumentsFind(ctx context.Context, request *FindDocumentsRequest
 
 	select {
 	case m.actions <- &Action{F: action, Name: "find documents"}:
+		wg.Wait()
 		return &FindDocumentsResponse{
 			Matches: items,
 		}, nil
 	default:
 		return nil, errors.Errorf("service unavailable")
+	}
+}
+
+func (m *Model) Dump(ctx context.Context) (string, error) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	var out string
+
+	action := func() error {
+		out = json.MustMarshalToString(m.Documents)
+		wg.Done()
+		return nil
+	}
+
+	select {
+	case m.actions <- &Action{F: action, Name: "dump"}:
+		wg.Wait()
+		return out, nil
+	default:
+		return "", errors.Errorf("service unavailable")
 	}
 }
 
