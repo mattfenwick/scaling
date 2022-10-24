@@ -42,3 +42,5 @@ deploy:
         artifactOverrides:
           webserver:
             image: webserver
+          loadgen:
+            image: webserver

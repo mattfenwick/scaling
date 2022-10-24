@@ -1,0 +1,15 @@
+{
+  "LogLevel": "debug",
+  "JaegerURL": "http://my-hunter-jaeger-collector.telemetry.svc.cluster.local:14268/api/traces",
+  "PrometheusPort": 9090,
+
+  "Webserver": {
+    "Host": "localhost",
+    "ContainerPort": 8765,
+    "ServicePort": 80
+  },
+
+  "LoadGen": {
+
+  }
+}

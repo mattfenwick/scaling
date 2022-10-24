@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/client"
 	"github.com/mattfenwick/scaling/pkg/parse"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
@@ -15,24 +16,28 @@ import (
 func Run() {
 	RunVersionCommand()
 
-	config, err := json.ParseFile[Config](os.Args[1])
+	mode := os.Args[1]
+
+	config, err := json.ParseFile[Config](os.Args[2])
 	utils.DoOrDie(err)
 
 	rootContext := context.Background()
 
-	tp, err, cleanup := telemetry.Setup(rootContext, config.LogLevel, config.Mode, config.PrometheusPort, config.JaegerURL)
+	tp, err, cleanup := telemetry.Setup(rootContext, config.LogLevel, mode, config.PrometheusPort, config.JaegerURL)
 	defer cleanup()
 	utils.DoOrDie(err)
 
-	switch config.Mode {
+	switch mode {
 	case "webserver":
-		webserver.Run(config.Port, tp)
+		webserver.Run(config.Webserver.ContainerPort, tp)
+	case "loadgen":
+		utils.DoOrDie(client.RunSmallBatchOfRequests(config.Webserver.Host, config.Webserver.ServicePort))
 	case "parser":
-		// TODO
 		result := parse.JsonObject("{}")
 		logrus.Infof("%+v", json.MustMarshalToString(result))
+		panic(errors.Errorf("TODO"))
 	default:
-		panic(errors.Errorf("invalid mode: %s", config.Mode))
+		panic(errors.Errorf("invalid mode: %s", mode))
 	}
 }
 

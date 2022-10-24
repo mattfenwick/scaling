@@ -35,11 +35,19 @@ ingress:
 
 
 jaegerUrl: ""
+logLevel: "info"
+
+
+loadgen:
+  binary: ""
+  enabled: false
+  image: "webserver"
+
 
 webserver:
   binary: ""
+  enabled: true
   image: "webserver"
-  logLevel: "info"
 
   serviceAccount:
     create: false

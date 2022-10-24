@@ -3,7 +3,14 @@ package cli
 type Config struct {
 	LogLevel       string
 	JaegerURL      string
-	Mode           string
-	Port           int
 	PrometheusPort int
+
+	Webserver struct {
+		Host          string
+		ContainerPort int
+		ServicePort   int
+	}
+
+	LoadGen struct {
+	}
 }

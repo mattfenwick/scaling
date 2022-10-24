@@ -1,19 +1,4 @@
-apiVersion: v1
-data:
-  config.json: |
-    {
-      "LogLevel": "{{ .Values.webserver.logLevel }}",
-      "JaegerURL": "{{ .Values.jaegerUrl }}",
-      "Mode": "webserver",
-      "Port": 8765,
-      "PrometheusPort": 9090
-    }
-kind: ConfigMap
-metadata:
-  name: webserver-config
-  labels:
-    {{- include "webserver.labels" . | nindent 4 }}
----
+{{ if .Values.webserver.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -58,7 +43,8 @@ spec:
         {{- toYaml .Values.webserver.podSecurityContext | nindent 8 }}
       containers:
         - name: "webserver"
-          command: ["{{ .Values.webserver.binary }}", "/config/config.json"]
+          command: ["{{ .Values.webserver.binary }}"]
+          args: ["webserver", "/config/config.json"]
           securityContext:
             {{- toYaml .Values.webserver.securityContext | nindent 12 }}
           image: "{{ .Values.webserver.image }}"
@@ -90,7 +76,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: webserver-config
+            name: scaling-config
 {{- if .Values.webserver.serviceAccount.create -}}
 ---
 apiVersion: v1
@@ -104,7 +90,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 {{- end }}
-
+{{- end }}
 #{{- if .Values.webserver.autoscaling.enabled }}
 #apiVersion: autoscaling/v2beta1
 #kind: HorizontalPodAutoscaler

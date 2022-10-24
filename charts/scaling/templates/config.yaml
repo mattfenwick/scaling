@@ -1,0 +1,19 @@
+apiVersion: v1
+data:
+  config.json: |
+    {
+      "LogLevel": "{{ .Values.logLevel }}",
+      "JaegerURL": "{{ .Values.jaegerUrl }}",
+      "PrometheusPort": 9090,
+      "Webserver": {
+        "Host": "{{ include "scaling.fullname" . }}-webserver",
+        "ContainerPort": 8765,
+        "ServicePort": 80
+      },
+      "Loadgen": {
+    
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: scaling-config

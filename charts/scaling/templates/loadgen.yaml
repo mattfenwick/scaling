@@ -1,0 +1,35 @@
+{{ if .Values.loadgen.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook-weight: "-1"
+    helm.sh/hook: post-upgrade, post-install
+  labels:
+    {{- include "loadgen.labels" . | nindent 4 }}
+  name: loadgen
+spec:
+  backoffLimit: 1
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        {{- include "loadgen.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - command: ["{{ .Values.loadgen.binary }}"]
+        args: ["loadgen", "/config/config.json"]
+        image: "{{ .Values.loadgen.image }}"
+        imagePullPolicy: Always
+        name: loadgen
+        resources: {}
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      restartPolicy: Never
+      volumes:
+      - name: config
+        configMap:
+          name: scaling-config
+{{- end }}

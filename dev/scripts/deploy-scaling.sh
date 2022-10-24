@@ -9,7 +9,7 @@ kubectl create ns "${SCALING_NS}" || true
 
 kubectl create configmap webserver-config \
   --namespace "${SCALING_NS}" \
-  --from-file=config.json=../cmd/webserver.json \
+  --from-file=config.json=../cmd/config.json \
   -o yaml --dry-run=client | kubectl apply -f -
 
 helm upgrade --install my-scaling \
