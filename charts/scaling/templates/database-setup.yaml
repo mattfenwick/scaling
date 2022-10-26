@@ -1,0 +1,35 @@
+{{- if .Values.postgres.initializeJob.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    "helm.sh/hook-weight": "-12"
+    helm.sh/hook: pre-install
+  name: {{ include "scaling.fullname" . }}-initialize-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: scaling-initialize-db
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: scaling-initialize-db
+    spec:
+      restartPolicy: "Never"
+      containers:
+      - name: scaling-initialize-db
+        command: ["/scaling/sql/initialize.sh"]
+        env:
+        {{- include "postgres.environment" . | indent 10 }}
+        image: {{ .Values.postgres.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 128Mi
+          requests:
+            cpu: "0.1"
+            memory: 128Mi
+{{- end }}

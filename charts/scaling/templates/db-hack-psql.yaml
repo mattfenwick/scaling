@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scaling.fullname" . }}-db-hack-psql
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: scaling-db-hack-psql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: scaling-db-hack-psql
+    spec:
+      containers:
+      - name: db-hack-psql
+        image: {{ .Values.postgres.image }}
+        imagePullPolicy: Always
+        command: ["/bin/sleep", "infinity"]
+        env:
+          {{- include "postgres.environment" . | indent 10 }}
+        resources:
+          limits:
+            cpu: "0.1"
+            memory: 128Mi
+          requests:
+            cpu: "0.1"
+            memory: 128Mi

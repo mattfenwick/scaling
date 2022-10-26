@@ -1,15 +1,8 @@
 {{- if .Values.ingress.enabled -}}
-{{- $fullName := include "scaling.fullname" . -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ $fullName }}
-  labels:
-    {{- include "scaling.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+  name: {{ include "scaling.fullname" . | quote }}
 spec:
   ingressClassName: {{ .Values.ingress.className | quote }}
   tls:
