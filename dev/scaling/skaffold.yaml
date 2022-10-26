@@ -19,21 +19,23 @@ build:
 deploy:
   helm:
     releases:
-      - name: postgres
+      - name: my-pg
         repo: https://charts.bitnami.com/bitnami
         remoteChart: postgresql
-        version: 11.6.12
+        version: 11.6.2
         namespace: scaling
         wait: true
-#        overrides:
+        overrides:
 #          primary:
 #            extendedConfiguration: |
 #              shared_buffers='1GB'
 #              max_connections='200'
-      #          auth:
-      #            username: a
-      #            password: b
-      #            database: c
+          auth:
+            database: "postgres"
+            postgresPassword: "postgres"
+#            username: postgres
+#            password: postgres
+#            database: postgres
       - name: my-scaling
         chartPath: ../../charts/scaling
         namespace: scaling

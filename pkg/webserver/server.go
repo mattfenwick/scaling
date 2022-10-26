@@ -24,6 +24,8 @@ type Responder interface {
 	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
 	Dump(ctx context.Context) (string, error)
 
+	Sleep(ctx context.Context, seconds string) error
+
 	IsLive(context.Context) bool
 	IsReady(context.Context) bool
 }
@@ -38,9 +40,11 @@ func RequestHandler(r *http.Request, process func(ctx context.Context, body stri
 
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
+	childCtx, childCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer childCancel()
 
 	span.AddEvent("start process")
-	response, err := process(ctx, string(body), r.URL.Query())
+	response, err := process(childCtx, string(body), r.URL.Query())
 	span.AddEvent("finish process")
 
 	if err != nil {
@@ -112,6 +116,7 @@ const (
 	AllDocumentsPath  = "/documents/all"
 	FindDocumentsPath = "/documents/find"
 	DumpPath          = "/dump"
+	SleepPath         = "/sleep"
 )
 
 func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMux {
@@ -180,6 +185,13 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.Dump(ctx)
 			},
 		})), "handle dump"))
+
+	serveMux.Handle(SleepPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				return "", responder.Sleep(ctx, values.Get("seconds"))
+			},
+		})), "handle sleep"))
 
 	return serveMux
 }

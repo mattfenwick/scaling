@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -252,4 +253,30 @@ func (m *Model) IsLive(ctx context.Context) bool {
 
 func (m *Model) IsReady(ctx context.Context) bool {
 	return m.Ready
+}
+
+func (m *Model) Sleep(ctx context.Context, milliseconds string) error {
+	ms, err := strconv.Atoi(milliseconds)
+	if err != nil {
+		return errors.Wrapf(err, "unable to parse milliseconds: '%s'", milliseconds)
+	}
+	if ms <= 0 || ms > 5000 {
+		return errors.Errorf("milliseconds '%d' out of range", ms)
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	action := func() error {
+		time.Sleep(time.Duration(ms) * time.Millisecond)
+		return nil
+	}
+
+	select {
+	case m.actions <- &Action{F: action, Name: "sleep"}:
+		wg.Wait()
+		return nil
+	default:
+		return errors.Errorf("service unavailable")
+	}
 }
