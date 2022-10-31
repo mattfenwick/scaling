@@ -7,9 +7,13 @@ KIND_NODE_IMAGE="kindest/node:v1.24.6"
 REGISTRY_PORT=5000
 REGISTRY_IMAGE="docker.io/library/registry:2"
 REGISTRY_NAME="kind-registry"
+KIND_CLUSTER_NAME="scaling"
 
 
-kind create cluster --config=./dev/scripts/kind-config.yaml --image "$KIND_NODE_IMAGE"
+kind create cluster \
+  --name "$KIND_CLUSTER_NAME" \
+  --config=./dev/scripts/kind-config.yaml \
+  --image "$KIND_NODE_IMAGE"
 
 # Document the local registry
 # https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry
