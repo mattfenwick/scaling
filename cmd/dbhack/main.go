@@ -69,6 +69,26 @@ func main() {
 	utils.DoOrDie(err)
 	fmt.Printf("upvotes: %s\n", json.MustMarshalToString(upvotes))
 
+	// find followers by user
+	allUsers, err := database.ReadAllUsers(ctx, db)
+	utils.DoOrDie(err)
+	for _, user := range allUsers {
+		userFollowers, err := database.ReadFollowersOf(ctx, db, user.UserId)
+		utils.DoOrDie(err)
+		for _, follower := range userFollowers {
+			fmt.Printf("follower of %s (%s): %s (%s)\n", user.Name, user.UserId, follower.Name, follower.UserId)
+		}
+
+		userMessages, err := database.ReadMessagesForUser(ctx, db, user.UserId)
+		utils.DoOrDie(err)
+		for _, message := range userMessages {
+			fmt.Printf("message for %s (%s): %d upvotes, %s (%s)\n", user.Name, user.UserId, message.UpvoteCount, message.Content, message.MessageId)
+		}
+		if len(userMessages) == 0 {
+			fmt.Printf("no messages for %s\n", user.UserId)
+		}
+	}
+
 	// done
 	if false {
 		doDocumentStuff(db)

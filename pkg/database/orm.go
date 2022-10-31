@@ -9,6 +9,66 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	readFollowersOfQueryTemplate = `
+	select 
+		users.*
+	from followers
+	inner join 
+		users
+	on 
+		followers.follower_user_id = users.user_id 
+	where 
+		followers.followee_user_id = $1`
+
+	readMessagesFromUserAndFollowersTemplate = `
+	with userids as (
+		select 
+			$1 as user_id
+		union
+		select 
+			follower_user_id
+		from followers
+		where followee_user_id = $1
+	  ),
+	  upvote_counts as (
+		select message_id, count(*) as upvotes
+		from messages
+		group by message_id
+	  )
+	select
+		messages.message_id,
+		messages.sender_user_id,
+		messages.content,
+		upvote_counts.upvotes,
+		messages.created_at
+	from messages
+	inner join 
+		userids
+	on 
+		messages.sender_user_id = userids.user_id
+	left join
+	    upvote_counts
+	on
+	  	messages.message_id = upvote_counts.message_id`
+)
+
+var (
+	loadUser = func(rows *sql.Rows, record *User) error {
+		return rows.Scan(&record.UserId, &record.Name, &record.Email, &record.CreatedAt)
+	}
+
+	loadMessage = func(rows *sql.Rows, record *Message) error {
+		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.CreatedAt)
+	}
+
+	loadMessageUpvoteCount = func(rows *sql.Rows, record *MessageUpvoteCount) error {
+		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.UpvoteCount, &record.CreatedAt)
+	}
+)
+
+// Users
+
 type User struct {
 	UserId    uuid.UUID
 	Name      string
@@ -32,32 +92,21 @@ func InsertUser(ctx context.Context, db *sql.DB, user *User) error {
 }
 
 func ReadAllUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
-	rows, err := db.QueryContext(ctx, "select * from users")
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to issue query")
-	}
-
-	var records []*User
-
-	for rows.Next() {
-		var record User
-		err = rows.Scan(&record.UserId, &record.Name, &record.Email, &record.CreatedAt)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to load row")
-		}
-		records = append(records, &record)
-	}
-
-	if closeErr := rows.Close(); closeErr != nil {
-		return nil, errors.Wrapf(err, "unable to close")
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "row iteration problem")
-	}
-
-	return records, nil
+	return ReadMany[User](ctx, db, loadUser, "select * from users")
 }
+
+func ReadUserById(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
+	rows := db.QueryRowContext(ctx, "select * from users where user_id = $1", userId)
+
+	var record User
+	err := rows.Scan(&record.UserId, &record.Name, &record.Email, &record.CreatedAt)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to load row")
+	}
+	return &record, nil
+}
+
+// Followers
 
 type Follower struct {
 	FolloweeUserId uuid.UUID
@@ -80,32 +129,17 @@ func InsertFollower(ctx context.Context, db *sql.DB, follower *Follower) error {
 }
 
 func ReadAllFollowers(ctx context.Context, db *sql.DB) ([]*Follower, error) {
-	rows, err := db.QueryContext(ctx, "select * from followers")
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to issue query")
+	process := func(rows *sql.Rows, record *Follower) error {
+		return rows.Scan(&record.FolloweeUserId, &record.FollowerUserId, &record.CreatedAt)
 	}
-
-	var records []*Follower
-
-	for rows.Next() {
-		var record Follower
-		err = rows.Scan(&record.FolloweeUserId, &record.FollowerUserId, &record.CreatedAt)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to load row")
-		}
-		records = append(records, &record)
-	}
-
-	if closeErr := rows.Close(); closeErr != nil {
-		return nil, errors.Wrapf(err, "unable to close")
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "row iteration problem")
-	}
-
-	return records, nil
+	return ReadMany[Follower](ctx, db, process, "select * from followers")
 }
+
+func ReadFollowersOf(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*User, error) {
+	return ReadMany[User](ctx, db, loadUser, readFollowersOfQueryTemplate, userId)
+}
+
+// Messages
 
 type Message struct {
 	MessageId    uuid.UUID
@@ -130,32 +164,22 @@ func InsertMessage(ctx context.Context, db *sql.DB, message *Message) error {
 }
 
 func ReadAllMessages(ctx context.Context, db *sql.DB) ([]*Message, error) {
-	rows, err := db.QueryContext(ctx, "select * from messages")
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to issue query")
-	}
-
-	var records []*Message
-
-	for rows.Next() {
-		var record Message
-		err = rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.CreatedAt)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to load row")
-		}
-		records = append(records, &record)
-	}
-
-	if closeErr := rows.Close(); closeErr != nil {
-		return nil, errors.Wrapf(err, "unable to close")
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "row iteration problem")
-	}
-
-	return records, nil
+	return ReadMany[Message](ctx, db, loadMessage, "select * from messages")
 }
+
+type MessageUpvoteCount struct {
+	MessageId    uuid.UUID
+	SenderUserId uuid.UUID
+	Content      string
+	UpvoteCount  int
+	CreatedAt    time.Time
+}
+
+func ReadMessagesForUser(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*MessageUpvoteCount, error) {
+	return ReadMany[MessageUpvoteCount](ctx, db, loadMessageUpvoteCount, readMessagesFromUserAndFollowersTemplate, userId)
+}
+
+// Upvotes
 
 type Upvote struct {
 	UpvoteId  uuid.UUID
@@ -180,29 +204,8 @@ func InsertUpvote(ctx context.Context, db *sql.DB, upvote *Upvote) error {
 }
 
 func ReadAllUpvotes(ctx context.Context, db *sql.DB) ([]*Upvote, error) {
-	rows, err := db.QueryContext(ctx, "select * from upvotes")
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to issue query")
+	process := func(rows *sql.Rows, record *Upvote) error {
+		return rows.Scan(&record.UpvoteId, &record.UserId, &record.MessageId, &record.CreatedAt)
 	}
-
-	var records []*Upvote
-
-	for rows.Next() {
-		var record Upvote
-		err = rows.Scan(&record.UpvoteId, &record.UserId, &record.MessageId, &record.CreatedAt)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to load row")
-		}
-		records = append(records, &record)
-	}
-
-	if closeErr := rows.Close(); closeErr != nil {
-		return nil, errors.Wrapf(err, "unable to close")
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "row iteration problem")
-	}
-
-	return records, nil
+	return ReadMany[Upvote](ctx, db, process, "select * from upvotes")
 }
