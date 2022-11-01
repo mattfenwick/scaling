@@ -1,14 +1,16 @@
 package utils
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-func RestyIssueRequest[A any](restyClient *resty.Client, verb string, path string, body interface{}, queryParams map[string]string) (*A, string, error) {
+func RestyIssueRequest[A any](ctx context.Context, restyClient *resty.Client, verb string, path string, body interface{}, queryParams map[string]string) (*A, string, error) {
 	var err error
 	request := restyClient.R()
 	if body != nil {
@@ -18,6 +20,7 @@ func RestyIssueRequest[A any](restyClient *resty.Client, verb string, path strin
 	}
 
 	request = request.SetQueryParams(queryParams)
+	request = request.SetContext(ctx)
 
 	urlPath := fmt.Sprintf("%s/%s", restyClient.BaseURL, path)
 	logrus.Debugf("issuing %s to %s", verb, urlPath)

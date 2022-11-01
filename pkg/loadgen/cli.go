@@ -10,22 +10,18 @@ import (
 
 type Config struct {
 	Mode              string
-	KeyCounts         []int
 	Workers           int
 	PauseMilliseconds int
 }
 
 func Cli(client *webserver.Client, config *Config) {
-	uploader := NewUploader(client)
-
 	ctx := context.TODO()
 
+	uploader := NewGenerator(ctx, client)
+
 	switch config.Mode {
-	case "canned":
-		utils.DoOrDie(uploader.RunCannedUploads())
-	case "continuous":
-		uploader.RunContinuous(ctx, config.KeyCounts, config.Workers, config.PauseMilliseconds)
-		<-ctx.Done()
+	case "users":
+		uploader.CreateUsers(ctx, 10)
 	default:
 		utils.DoOrDie(errors.Errorf("invalid mode: %s", config.Mode))
 	}

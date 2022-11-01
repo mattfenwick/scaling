@@ -23,6 +23,7 @@ func NewUploader(client *webserver.Client) *Uploader {
 }
 
 func (u *Uploader) RunCannedUploads() error {
+	ctx := context.TODO()
 	docs := []string{
 		"abcdef",
 		`{"abc": [123, 456]}`,
@@ -36,7 +37,7 @@ func (u *Uploader) RunCannedUploads() error {
 		"false",
 	}
 	for _, doc := range docs {
-		resp, err := u.Client.UploadDocument(&webserver.UploadDocumentRequest{
+		resp, err := u.Client.UploadDocument(ctx, &webserver.UploadDocumentRequest{
 			Document: doc,
 		})
 		if err != nil {
@@ -47,7 +48,7 @@ func (u *Uploader) RunCannedUploads() error {
 		logrus.Infof("resp: %s", json.MustMarshalToString(resp))
 		logrus.Infof("id: %s", id)
 
-		fetchedDoc, err := u.Client.GetDocument(&webserver.GetDocumentRequest{
+		fetchedDoc, err := u.Client.GetDocument(ctx, &webserver.GetDocumentRequest{
 			DocumentId: id,
 		})
 		if err != nil {
@@ -56,7 +57,7 @@ func (u *Uploader) RunCannedUploads() error {
 
 		logrus.Infof("fetched doc: %s", json.MustMarshalToString(fetchedDoc.Document))
 
-		allDocs, err := u.Client.GetAllDocuments()
+		allDocs, err := u.Client.GetAllDocuments(ctx)
 		if err != nil {
 			return err
 		}
@@ -67,9 +68,10 @@ func (u *Uploader) RunCannedUploads() error {
 }
 
 func (u *Uploader) RunRandomUploadsByKeyCount(keyCounts []int) {
+	ctx := context.TODO()
 	// TODO concurrency?
 	for _, c := range keyCounts {
-		resp, err := u.Client.UploadDocument(&webserver.UploadDocumentRequest{
+		resp, err := u.Client.UploadDocument(ctx, &webserver.UploadDocumentRequest{
 			Document: json.MustMarshalToString(GenerateByNumberOfKeys(c)),
 		})
 		utils.DoOrDie(err)
@@ -91,7 +93,7 @@ func (u *Uploader) RunContinuous(ctx context.Context, keyCounts []int, workers i
 
 				keys := keyCounts[i%len(keyCounts)]
 				start := time.Now()
-				resp, err := u.Client.UploadDocument(&webserver.UploadDocumentRequest{
+				resp, err := u.Client.UploadDocument(ctx, &webserver.UploadDocumentRequest{
 					Document: json.MustMarshalToString(GenerateByNumberOfKeys(keys)),
 				})
 				telemetry.RecordClientApiRequestDuration("upload", err, start)

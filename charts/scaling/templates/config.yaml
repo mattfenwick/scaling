@@ -10,6 +10,12 @@ data:
         "ContainerPort": 8765,
         "ServicePort": 80
       },
+      "Postgres": {
+        "Host": {{ .Values.postgres.host | quote }},
+        "User": {{ .Values.postgres.user | quote }},
+        "Password": {{ .Values.postgres.password | quote }},
+        "Database": {{ .Values.postgres.dbname | quote }}
+      },
       "Loadgen": {
         "Mode": "canned"
       }

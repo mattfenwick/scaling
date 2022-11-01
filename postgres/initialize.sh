@@ -12,7 +12,9 @@ set -eu
 
 pg_isready
 
-psql --command "create database \"$SCALING_DATABASE\" encoding UTF8"
+BASEDIR=${BASEDIR:-$(dirname "$0")}
+
+psql --command "create database \"$SCALING_DATABASE\" encoding UTF8" || true
 
 PGDATABASE="$SCALING_DATABASE" \
-  psql --file ./schema.sql
+  psql --file "$BASEDIR"/schema.sql
