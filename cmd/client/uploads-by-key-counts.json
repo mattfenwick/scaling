@@ -8,8 +8,8 @@
   },
 
   "LoadGen": {
-    "Mode": "continuous",
-    "Mode3": "canned",
+    "Mode3": "continuous",
+    "Mode": "canned",
     "Mode2": "by-key-count",
     "KeyCounts": [18, 0, 2, 8, 4, 9, 13, 3],
     "Workers": 5,

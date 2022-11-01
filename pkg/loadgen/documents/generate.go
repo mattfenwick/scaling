@@ -1,7 +1,8 @@
-package loadgen
+package documents
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
 )
 

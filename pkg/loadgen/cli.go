@@ -2,6 +2,7 @@ package loadgen
 
 import (
 	"context"
+
 	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/mattfenwick/scaling/pkg/webserver"
 	"github.com/pkg/errors"
@@ -22,8 +23,6 @@ func Cli(client *webserver.Client, config *Config) {
 	switch config.Mode {
 	case "canned":
 		utils.DoOrDie(uploader.RunCannedUploads())
-	case "by-key-count":
-		uploader.RunRandomUploadsByKeyCount(config.KeyCounts)
 	case "continuous":
 		uploader.RunContinuous(ctx, config.KeyCounts, config.Workers, config.PauseMilliseconds)
 		<-ctx.Done()
