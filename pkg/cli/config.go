@@ -13,5 +13,14 @@ type Config struct {
 		ServicePort   int
 	}
 
+	Postgres *PostgresConfig
+
 	LoadGen loadgen.Config
+}
+
+type PostgresConfig struct {
+	Host     string
+	User     string
+	Password string
+	Database string
 }

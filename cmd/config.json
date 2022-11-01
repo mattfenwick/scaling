@@ -9,6 +9,13 @@
     "ServicePort": 8765
   },
 
+  "Postgres": {
+    "User": "postgres",
+    "Password": "postgres",
+    "Host": "localhost",
+    "Database": "hack"
+  },
+
   "LoadGen": {
 
   }

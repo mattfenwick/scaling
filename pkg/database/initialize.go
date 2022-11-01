@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 
 	"net/url"
 
@@ -19,6 +20,7 @@ func Connect(user string, password string, host string, database string) (*sql.D
 		host,
 		5432,
 		database)
+	logrus.Infof("attempting to connect to postgres at '%s'", dbConnectionURL)
 	db, err := sql.Open("postgres", dbConnectionURL)
 	if err != nil {
 		return db, errors.Wrap(err, "unable to open postgres connection")

@@ -3,14 +3,16 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/database"
 	"github.com/mattfenwick/scaling/pkg/loadgen"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/mattfenwick/scaling/pkg/webserver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func Run() {
@@ -33,7 +35,10 @@ func RunWithConfig(mode string, config *Config) {
 
 	switch mode {
 	case "webserver":
-		webserver.Run(config.Webserver.ContainerPort, tp)
+		pg := config.Postgres
+		db, err := database.Connect(pg.User, pg.Password, pg.Host, pg.Database)
+		utils.DoOrDie(err)
+		webserver.Run(config.Webserver.ContainerPort, tp, db)
 	case "loadgen":
 		url := fmt.Sprintf("http://%s:%d", config.Webserver.Host, config.Webserver.ServicePort)
 		client := webserver.NewClient(url)

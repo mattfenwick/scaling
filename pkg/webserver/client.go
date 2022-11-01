@@ -17,6 +17,26 @@ func NewClient(url string) *Client {
 	}
 }
 
+func (c *Client) CreateUser(request *CreateUserRequest) (*CreateUserResponse, error) {
+	out, _, err := utils.RestyIssueRequest[CreateUserResponse](c.Resty, "POST", UsersPath, request, nil)
+	return out, err
+}
+
+func (c *Client) CreateMessage(request *CreateMessageRequest) (*CreateMessageResponse, error) {
+	out, _, err := utils.RestyIssueRequest[CreateMessageResponse](c.Resty, "POST", MessagesPath, request, nil)
+	return out, err
+}
+
+func (c *Client) CreateFollower(request *FollowRequest) (*FollowResponse, error) {
+	out, _, err := utils.RestyIssueRequest[FollowResponse](c.Resty, "POST", FollowersPath, request, nil)
+	return out, err
+}
+
+func (c *Client) CreateUpvote(request *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
+	out, _, err := utils.RestyIssueRequest[CreateUpvoteResponse](c.Resty, "POST", UpvotesPath, request, nil)
+	return out, err
+}
+
 func (c *Client) UploadDocument(request *UploadDocumentRequest) (*UploadDocumentResponse, error) {
 	out, _, err := utils.RestyIssueRequest[UploadDocumentResponse](c.Resty, "POST", DocumentsPath, request, nil)
 	return out, err

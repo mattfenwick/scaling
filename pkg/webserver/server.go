@@ -3,31 +3,37 @@ package webserver
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"io"
-	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Responder interface {
+	Sleep(ctx context.Context, seconds string) error
+
+	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
+	CreateMessage(context.Context, *CreateMessageRequest) (*CreateMessageResponse, error)
+	Follow(context.Context, *FollowRequest) (*FollowResponse, error)
+	CreateUpvote(context.Context, *CreateUpvoteRequest) (*CreateUpvoteResponse, error)
+
+	IsLive(context.Context) bool
+	IsReady(context.Context) bool
+
 	DocumentsFetchAll(context.Context) (*GetAllDocumentsResponse, error)
 	DocumentsFind(context.Context, *FindDocumentsRequest) (*FindDocumentsResponse, error)
 	DocumentFetch(context.Context, *GetDocumentRequest) (*GetDocumentResponse, error)
 	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
 	Dump(ctx context.Context) (string, error)
-
-	Sleep(ctx context.Context, seconds string) error
-
-	IsLive(context.Context) bool
-	IsReady(context.Context) bool
 }
 
 func RequestHandler(r *http.Request, process func(ctx context.Context, body string, urlParams url.Values) (any, error)) (int, any, error) {
@@ -110,19 +116,31 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 }
 
 const (
-	LivenessPath      = "/liveness"
-	ReadinessPath     = "/readiness"
+	// kubernetes
+	LivenessPath  = "/liveness"
+	ReadinessPath = "/readiness"
+
+	// core model
+	UsersPath     = "/users"
+	MessagesPath  = "/messages"
+	FollowersPath = "/followers"
+	UpvotesPath   = "/upvotes"
+
+	// hacks
+	DumpPath  = "/dump"
+	SleepPath = "/sleep"
+
+	// documents
 	DocumentsPath     = "/documents"
 	AllDocumentsPath  = "/documents/all"
 	FindDocumentsPath = "/documents/find"
-	DumpPath          = "/dump"
-	SleepPath         = "/sleep"
 )
 
 func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMux {
 	serveMux := http.NewServeMux()
 	//serveMux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(handler), "handle"))
 
+	// kubernetes
 	serveMux.Handle(LivenessPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
@@ -145,6 +163,67 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle readiness"))
 
+	// core model
+	serveMux.Handle(UsersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				user, err := json.ParseString[CreateUserRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.CreateUser(ctx, user)
+			},
+		})), "handle create user"))
+
+	serveMux.Handle(MessagesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				message, err := json.ParseString[CreateMessageRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.CreateMessage(ctx, message)
+			},
+		})), "handle create message"))
+
+	serveMux.Handle(FollowersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				follow, err := json.ParseString[FollowRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.Follow(ctx, follow)
+			},
+		})), "handle follow"))
+
+	serveMux.Handle(UpvotesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				upvote, err := json.ParseString[CreateUpvoteRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.CreateUpvote(ctx, upvote)
+			},
+		})), "handle create upvote"))
+
+	// hacks
+	serveMux.Handle(DumpPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				return responder.Dump(ctx)
+			},
+		})), "handle dump"))
+
+	serveMux.Handle(SleepPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				return "", responder.Sleep(ctx, values.Get("seconds"))
+			},
+		})), "handle sleep"))
+
+	// documents
 	serveMux.Handle(DocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
@@ -178,20 +257,6 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.DocumentsFind(ctx, fdr)
 			},
 		})), "handle find documents"))
-
-	serveMux.Handle(DumpPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
-		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
-			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				return responder.Dump(ctx)
-			},
-		})), "handle dump"))
-
-	serveMux.Handle(SleepPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
-		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
-			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				return "", responder.Sleep(ctx, values.Get("seconds"))
-			},
-		})), "handle sleep"))
 
 	return serveMux
 }

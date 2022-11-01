@@ -2,16 +2,19 @@ package webserver
 
 import (
 	"context"
+	"database/sql"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/database"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"strconv"
-	"sync"
-	"time"
 )
 
 type Document struct {
@@ -30,17 +33,19 @@ type Model struct {
 	Documents map[string]*Document
 	Live      bool
 	Ready     bool
+	db        *sql.DB
 	tp        trace.TracerProvider
 	tracer    trace.Tracer
 	actions   chan *Action
 }
 
-func NewModel(tp trace.TracerProvider, ctx context.Context) *Model {
+func NewModel(ctx context.Context, tp trace.TracerProvider, db *sql.DB) *Model {
 	actions := make(chan *Action, 1)
 	m := &Model{
 		Documents: map[string]*Document{},
 		Live:      true,
 		Ready:     true,
+		db:        db,
 		tp:        tp,
 		tracer:    tp.Tracer("model"),
 		actions:   actions,
@@ -279,4 +284,40 @@ func (m *Model) Sleep(ctx context.Context, milliseconds string) error {
 	default:
 		return errors.Errorf("service unavailable")
 	}
+}
+
+func (m *Model) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
+	newUser := database.NewUser(req.Name, req.Email)
+	err := database.InsertUser(ctx, m.db, newUser)
+	if err != nil {
+		return nil, err
+	}
+	return &CreateUserResponse{UserId: newUser.UserId}, nil
+}
+
+func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*CreateMessageResponse, error) {
+	newMessage := database.NewMessage(req.SenderUserId, req.Content)
+	err := database.InsertMessage(ctx, m.db, newMessage)
+	if err != nil {
+		return nil, err
+	}
+	return &CreateMessageResponse{MessageId: newMessage.MessageId}, nil
+}
+
+func (m *Model) Follow(ctx context.Context, req *FollowRequest) (*FollowResponse, error) {
+	newFollower := database.NewFollower(req.FolloweeUserId, req.FollowerUserId)
+	err := database.InsertFollower(ctx, m.db, newFollower)
+	if err != nil {
+		return nil, err
+	}
+	return &FollowResponse{}, nil
+}
+
+func (m *Model) CreateUpvote(ctx context.Context, req *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
+	newUpvote := database.NewUpvote(req.UserId, req.MessageId)
+	err := database.InsertUpvote(ctx, m.db, newUpvote)
+	if err != nil {
+		return nil, err
+	}
+	return &CreateUpvoteResponse{UpvoteId: newUpvote.UpvoteId}, nil
 }
