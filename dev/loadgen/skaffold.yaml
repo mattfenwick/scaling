@@ -1,9 +1,9 @@
 apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
-  name: scaling
+  name: loadgen
 requires:
-  - path: ../base
+  - path: ../server
 build:
   local:
     concurrency: 0
@@ -19,25 +19,8 @@ build:
 deploy:
   helm:
     releases:
-      - name: my-pg
-        repo: https://charts.bitnami.com/bitnami
-        remoteChart: postgresql
-        version: 11.6.2
-        namespace: scaling
-        wait: true
-        overrides:
-#          primary:
-#            extendedConfiguration: |
-#              shared_buffers='1GB'
-#              max_connections='200'
-          auth:
-            database: "postgres"
-            postgresPassword: "postgres"
-#            username: postgres
-#            password: postgres
-#            database: postgres
-      - name: my-scaling
-        chartPath: ../../charts/scaling
+      - name: my-loadgen
+        chartPath: ../../charts/loadgen
         namespace: scaling
         valuesFiles:
           - values.yaml

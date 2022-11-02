@@ -3,4 +3,4 @@ kind: Config
 metadata:
   name: scaling-hacking
 requires:
-  - path: ./dev/scaling
+  - path: ./dev/server

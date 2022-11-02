@@ -4,12 +4,5 @@ logLevel: "debug"
 postgres:
   image: "localhost:5000/scaling-database:latest"
 
-loadgen:
-  binary: "/ko-app/cmd"
-  job:
-    enabled: false
-  deployment:
-    enabled: true
-
 webserver:
   binary: "/ko-app/cmd"

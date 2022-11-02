@@ -55,9 +55,8 @@ func (g *Generator) CreateUsers(ctx context.Context, limit int) {
 			g.Actions <- func() {
 				g.UserIds = append(g.UserIds, resp.UserId)
 			}
+			g.CreateMessages(childCtx, resp.UserId, messages, rand.Intn(100))
 		}
-
-		g.CreateMessages(childCtx, resp.UserId, messages, rand.Intn(100))
 	}
 }
 

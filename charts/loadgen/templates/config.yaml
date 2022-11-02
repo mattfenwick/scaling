@@ -1,0 +1,21 @@
+apiVersion: v1
+data:
+  config.json: |
+    {
+      "LogLevel": "{{ .Values.logLevel }}",
+      "JaegerURL": "{{ .Values.jaegerUrl }}",
+      "PrometheusPort": 9090,
+      "Webserver": {
+        "Host": "{{ .Values.webserver.host }}",
+        "ContainerPort": 8765,
+        "ServicePort": 80
+      },
+      "Loadgen": {
+        "Mode": "users",
+        "Workers": 5,
+        "PauseMilliseconds": 500
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: loadgen-config

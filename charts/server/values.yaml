@@ -30,22 +30,6 @@ postgres:
     enabled: true
 
 
-loadgen:
-  job:
-    enabled: false
-  deployment:
-    enabled: false
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 100m
-        memory: 128Mi
-  binary: ""
-  image: "webserver"
-
-
 webserver:
   binary: ""
   enabled: true
@@ -70,9 +54,3 @@ webserver:
     limits:
       cpu: 100m
       memory: 128Mi
-
-  nodeSelector: { }
-
-  tolerations: [ ]
-
-  affinity: { }

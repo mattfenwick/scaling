@@ -1,36 +1,7 @@
-{{ if .Values.loadgen.deployment.enabled }}
-apiVersion: v1
-data:
-  config.json: |
-    {
-      "LogLevel": "{{ .Values.logLevel }}",
-      "JaegerURL": "{{ .Values.jaegerUrl }}",
-      "PrometheusPort": 9090,
-      "Webserver": {
-        "Host": "{{ include "scaling.fullname" . }}-webserver",
-        "ContainerPort": 8765,
-        "ServicePort": 80
-      },
-      "Postgres": {
-        "Host": {{ .Values.postgres.host | quote }},
-        "User": {{ .Values.postgres.user | quote }},
-        "Password": {{ .Values.postgres.password | quote }},
-        "Database": {{ .Values.postgres.dbname | quote }}
-      },
-      "Loadgen": {
-        "Mode": "users",
-        "Workers": 5,
-        "PauseMilliseconds": 500
-      }
-    }
-kind: ConfigMap
-metadata:
-  name: loadgen-config
----
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "scaling.fullname" . }}-loadgen
+  name: {{ include "loadgen.fullname" . }}-loadgen
   labels:
     {{- include "loadgen.deployment.labels" . | nindent 4 }}
 spec:
@@ -50,11 +21,11 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "scaling.fullname" . }}-loadgen
+  name: {{ include "loadgen.fullname" . }}-loadgen
   labels:
     {{- include "loadgen.deployment.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ if .Values.loadgen.deployment.enabled }}1{{ else }}0{{ end }}
   selector:
     matchLabels:
       {{- include "loadgen.deployment.selectorLabels" . | nindent 6 }}
@@ -100,4 +71,3 @@ spec:
         - name: config
           configMap:
             name: loadgen-config
-{{- end }}

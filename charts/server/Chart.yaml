@@ -1,6 +1,6 @@
 apiVersion: v2
-name: scaling
-description: Scaling
+name: server
+description: server for Scaling
 
 type: application
 

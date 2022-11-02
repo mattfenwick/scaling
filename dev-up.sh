@@ -43,6 +43,6 @@ kubectl patch secret grafana-dashboards \
 
 skaffold run
 
-#skaffold dev -m scaling
-#skaffold debug -m scaling
+#skaffold dev -m server
+#skaffold debug -m server
 
