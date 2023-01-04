@@ -9,18 +9,18 @@ BUILD_IMAGES=${BUILD_IMAGES:-true}
 DEPLOY_CHARTS=${DEPLOY_CHARTS:-true}
 
 export TELEMETRY_NS=${TELEMETRY_NS:-"telemetry"}
-export APP_NS=${APP_NS:-"scaling"}
 export KIND_NODE_IMAGE=${KIND_NODE_IMAGE:-"kindest/node:v1.24.6"}
 export REGISTRY_PORT=${REGISTRY_PORT:-5000}
 export REGISTRY_IMAGE=${REGISTRY_IMAGE:-"docker.io/library/registry:2"}
 export REGISTRY_NAME=${REGISTRY_NAME:-"kind-registry"}
 export KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"scaling"}
 export NGINX_NS=${NGINX_NS:-"nginx-ingress"}
-export PULL_IMAGE=${PULL_IMAGE:-true}
+export PULL_IMAGES=${PULL_IMAGES:-true}
 
-export SCALING_NS=${SCALING_NS:-"scaling"}
-export LOADGEN_RELEASE=${LOADGEN_RELEASE:-"my-loadgen"}
-export SERVER_RELEASE=${SERVER_RELEASE:-"my-scaling"}
+SCALING_NS=${SCALING_NS:-"scaling"}
+LOADGEN_RELEASE=${LOADGEN_RELEASE:-"my-loadgen"}
+SERVER_RELEASE=${SERVER_RELEASE:-"my-scaling"}
+POSTGRES_RELEASE_NAME=${POSTGRES_RELEASE_NAME:-"my-pg"}
 
 
 if [[ $CREATE_CLUSTER == true ]]; then
@@ -37,12 +37,12 @@ fi
 
 
 if [[ $BUILD_IMAGES == true ]]; then
-    pushd cmd
-    ./build.sh
+    pushd ../cmd
+        ./build.sh
     popd
 
-    pushd postgres
-    ./build-image.sh
+    pushd ../postgres
+        ./build-image.sh
     popd
 fi
 
@@ -50,7 +50,15 @@ fi
 if [[ $DEPLOY_CHARTS == true ]]; then
     kubectl create ns "${SCALING_NS}" || true
 
-    # TODO deploy postgres chart ????
+    # postgres
+    helm upgrade "${POSTGRES_RELEASE_NAME}" postgresql \
+        --install \
+        --repo https://charts.bitnami.com/bitnami \
+        --version 11.6.2 \
+        --namespace "$SCALING_NS" \
+        --timeout 5m0s \
+        --wait \
+        -f postgres-values.yaml
 
     # server
     helm upgrade --install "$SERVER_RELEASE" \

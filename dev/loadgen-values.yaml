@@ -3,7 +3,7 @@ logLevel: "debug"
 
 loadgen:
   binary: "/main"
-  image: "loadgen.image=localhost:5000/scaling:latest"
+  image: "localhost:5000/scaling:latest"
   job:
     enabled: true
   deployment:

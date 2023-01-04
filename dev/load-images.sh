@@ -15,7 +15,9 @@ declare -a IMAGES=(
   "prom/pushgateway:v1.4.3"
   "quay.io/prometheus/prometheus:v2.39.1"
 
-  "docker.io/bitnami/postgresql:14.4.0-debian-11-r4"
+  # "docker.io/bitnami/postgresql:14.4.0-debian-11-r4"
+  "docker.io/bitnami/postgres-exporter:0.10.1-debian-10-r129"
+  "docker.io/bitnami/postgresql:14.3.0-debian-10-r20"
 
   "grafana/loki:2.6.1"
 

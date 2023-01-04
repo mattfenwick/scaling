@@ -56,7 +56,7 @@ helm upgrade --install my-pg-prom-exporter prometheus-postgres-exporter \
   --version 2.5.0 \
   --debug \
   --namespace "$TELEMETRY_NS" \
-  --set "config.datasource.host=my-pg-postgresql.${APP_NS}.svc.cluster.local" \
+  --set "config.datasource.host=my-pg-postgresql.${SCALING_NS}.svc.cluster.local" \
   --set config.datasource.password=postgres \
   --set config.datasource.database=postgres \
   --set config.autoDiscoverDatabases=true \
