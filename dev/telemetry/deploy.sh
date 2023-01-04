@@ -4,13 +4,6 @@ set -xv
 set -euo pipefail
 
 
-TELEMETRY_NS="telemetry"
-APP_NS="scaling"
-
-
-./load-images.sh
-
-
 kubectl create ns "$TELEMETRY_NS" || true
 
 
@@ -79,3 +72,10 @@ helm upgrade --install my-hunter jaeger \
   --wait \
   -n "$TELEMETRY_NS" \
   -f jaeger-values.yaml
+
+# hack: add jaeger ingress b/c helm chart doesn't specify host
+#   TODO there might be a way to do this through the helm chart
+#   or could just use a port-forward
+kubectl create -n "$TELEMETRY_NS" \
+  -f jaeger-ingress.yaml \
+  -o yaml --dry-run=client | kubectl apply -f -

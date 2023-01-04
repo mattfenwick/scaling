@@ -3,7 +3,6 @@
 set -xv
 set -euo pipefail
 
-PULL_IMAGE=${PULL_IMAGE:-false}
 
 declare -a IMAGES=(
   "grafana/grafana:8.3.4"
@@ -31,9 +30,9 @@ declare -a IMAGES=(
 
 for image in "${IMAGES[@]}"
 do
-  if [[ $PULL_IMAGE == true ]]; then
+  if [[ $PULL_IMAGES == true ]]; then
     docker pull "$image"
   fi
 
-  kind load docker-image "$image"
+  kind load docker-image "$image" --name "$KIND_CLUSTER_NAME"
 done
