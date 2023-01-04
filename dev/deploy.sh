@@ -5,6 +5,9 @@ set -euo pipefail
 
 
 CREATE_CLUSTER=${CREATE_CLUSTER:-false}
+BUILD_IMAGES=${BUILD_IMAGES:-true}
+DEPLOY_CHARTS=${DEPLOY_CHARTS:-true}
+
 export TELEMETRY_NS=${TELEMETRY_NS:-"telemetry"}
 export APP_NS=${APP_NS:-"scaling"}
 export KIND_NODE_IMAGE=${KIND_NODE_IMAGE:-"kindest/node:v1.24.6"}
@@ -33,7 +36,7 @@ if [[ $CREATE_CLUSTER == true ]]; then
 fi
 
 
-if [[ $BUILD == true ]]; then
+if [[ $BUILD_IMAGES == true ]]; then
     pushd cmd
     ./build.sh
     popd
@@ -44,7 +47,7 @@ if [[ $BUILD == true ]]; then
 fi
 
 
-if [[ $DEPLOY == true ]]; then
+if [[ $DEPLOY_CHARTS == true ]]; then
     kubectl create ns "${SCALING_NS}" || true
 
     # TODO deploy postgres chart ????
