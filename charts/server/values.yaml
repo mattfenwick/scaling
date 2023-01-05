@@ -20,6 +20,24 @@ ingress:
   #      - scaling-example.local
 
 
+loadgen:
+  job:
+    enabled: true
+  deployment:
+    enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  binary: ""
+  image: "webserver"
+  webserver:
+    host: ""
+
+
 postgres:
   user: "postgres"
   host: "my-pg-postgresql"
@@ -28,6 +46,8 @@ postgres:
   image: "scaling-database"
   initializeJob:
     enabled: true
+  psqlHack:
+    enabled: false
 
 
 webserver:

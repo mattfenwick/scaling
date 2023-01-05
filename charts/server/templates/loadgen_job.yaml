@@ -31,5 +31,5 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: loadgen-config
+          name: {{ include "scaling.fullname" . }}-loadgen-config
 {{- end }}

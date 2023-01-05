@@ -77,7 +77,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: scaling-config
+            name: {{ include "scaling.fullname" . }}-scaling-config
 {{- if .Values.webserver.serviceAccount.create -}}
 ---
 apiVersion: v1

@@ -68,7 +68,7 @@ if [[ $DEPLOY_CHARTS == true ]]; then
 
     # loadgen
     helm upgrade --install "${LOADGEN_RELEASE}" \
-        ../charts/loadgen \
+        ../charts/server \
         --namespace "${SCALING_NS}" \
         --values loadgen-values.yaml
 fi

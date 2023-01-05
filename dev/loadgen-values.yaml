@@ -8,6 +8,14 @@ loadgen:
     enabled: true
   deployment:
     enabled: false
+  webserver:
+    host: "my-scaling-server-webserver"
+
+postgres:
+  initializeJob:
+    enabled: false
+  psqlHack:
+    enabled: false
 
 webserver:
-  host: "my-scaling-server-webserver"
+  enabled: false

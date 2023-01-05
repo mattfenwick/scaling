@@ -1,3 +1,4 @@
+{{ if or .Values.loadgen.deployment.enabled .Values.loadgen.job.enabled }}
 apiVersion: v1
 data:
   config.json: |
@@ -6,7 +7,7 @@ data:
       "JaegerURL": "{{ .Values.jaegerUrl }}",
       "PrometheusPort": 9090,
       "Webserver": {
-        "Host": "{{ .Values.webserver.host }}",
+        "Host": "{{ .Values.loadgen.webserver.host }}",
         "ContainerPort": 8765,
         "ServicePort": 80
       },
@@ -18,4 +19,5 @@ data:
     }
 kind: ConfigMap
 metadata:
-  name: loadgen-config
+  name: {{ include "scaling.fullname" . }}-loadgen-config
+{{- end }}
