@@ -93,6 +93,7 @@ func CreateDatabase(ctx context.Context, db *sql.DB, databaseName string) error 
 }
 
 func CreateDatabaseIfNotExists(ctx context.Context, db *sql.DB, databaseName string) error {
+	logrus.Debugf("creating database '%s' if not exists", databaseName)
 	exists, err := DoesDatabaseExist(ctx, db, databaseName)
 	if err != nil {
 		return err
@@ -101,6 +102,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, db *sql.DB, databaseName str
 		logrus.Debugf("skipping creation of database %s, already exists", databaseName)
 		return nil
 	}
+	logrus.Debugf("database '%s' does not exist: creating", databaseName)
 	_, err = RunStatement(ctx, db, fmt.Sprintf(`create database "%s" encoding UTF8`, databaseName))
 	return err
 }
