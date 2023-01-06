@@ -29,10 +29,6 @@ type Responder interface {
 	IsLive(context.Context) bool
 	IsReady(context.Context) bool
 
-	DocumentsFetchAll(context.Context) (*GetAllDocumentsResponse, error)
-	DocumentsFind(context.Context, *FindDocumentsRequest) (*FindDocumentsResponse, error)
-	DocumentFetch(context.Context, *GetDocumentRequest) (*GetDocumentResponse, error)
-	DocumentUpload(context.Context, *UploadDocumentRequest) (*UploadDocumentResponse, error)
 	Dump(ctx context.Context) (string, error)
 }
 
@@ -129,11 +125,6 @@ const (
 	// hacks
 	DumpPath  = "/dump"
 	SleepPath = "/sleep"
-
-	// documents
-	DocumentsPath     = "/documents"
-	AllDocumentsPath  = "/documents/all"
-	FindDocumentsPath = "/documents/find"
 )
 
 func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMux {
@@ -222,41 +213,6 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return "", responder.Sleep(ctx, values.Get("seconds"))
 			},
 		})), "handle sleep"))
-
-	// documents
-	serveMux.Handle(DocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
-		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
-			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				return responder.DocumentFetch(ctx, &GetDocumentRequest{
-					DocumentId: values.Get("id"),
-				})
-			},
-			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
-				udr, err := json.ParseString[UploadDocumentRequest](body)
-				if err != nil {
-					return nil, err
-				}
-				return responder.DocumentUpload(ctx, udr)
-			},
-		})), "handle document"))
-
-	serveMux.Handle(AllDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(0,
-		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
-			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				return responder.DocumentsFetchAll(ctx)
-			},
-		})), "handle fetch all documents"))
-
-	serveMux.Handle(FindDocumentsPath, otelhttp.NewHandler(http.HandlerFunc(Handler(10000,
-		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
-			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
-				fdr, err := json.ParseString[FindDocumentsRequest](body)
-				if err != nil {
-					return nil, err
-				}
-				return responder.DocumentsFind(ctx, fdr)
-			},
-		})), "handle find documents"))
 
 	return serveMux
 }

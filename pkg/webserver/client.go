@@ -38,23 +38,3 @@ func (c *Client) CreateUpvote(ctx context.Context, request *CreateUpvoteRequest)
 	out, _, err := utils.RestyIssueRequest[CreateUpvoteResponse](ctx, c.Resty, "POST", UpvotesPath, request, nil)
 	return out, err
 }
-
-func (c *Client) UploadDocument(ctx context.Context, request *UploadDocumentRequest) (*UploadDocumentResponse, error) {
-	out, _, err := utils.RestyIssueRequest[UploadDocumentResponse](ctx, c.Resty, "POST", DocumentsPath, request, nil)
-	return out, err
-}
-
-func (c *Client) GetDocument(ctx context.Context, request *GetDocumentRequest) (*GetDocumentResponse, error) {
-	out, _, err := utils.RestyIssueRequest[GetDocumentResponse](ctx, c.Resty, "GET", DocumentsPath, nil, map[string]string{"id": request.DocumentId})
-	return out, err
-}
-
-func (c *Client) GetAllDocuments(ctx context.Context) (*GetAllDocumentsResponse, error) {
-	out, _, err := utils.RestyIssueRequest[GetAllDocumentsResponse](ctx, c.Resty, "GET", AllDocumentsPath, nil, nil)
-	return out, err
-}
-
-func (c *Client) FindDocuments(ctx context.Context, request *FindDocumentsRequest) (*FindDocumentsResponse, error) {
-	out, _, err := utils.RestyIssueRequest[FindDocumentsResponse](ctx, c.Resty, "POST", FindDocumentsPath, request, nil)
-	return out, err
-}
