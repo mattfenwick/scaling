@@ -57,6 +57,9 @@ var (
 	loadUser = func(rows *sql.Rows, record *User) error {
 		return rows.Scan(&record.UserId, &record.Name, &record.Email, &record.CreatedAt)
 	}
+	loadSingleUser = func(rows *sql.Row, record *User) error {
+		return rows.Scan(&record.UserId, &record.Name, &record.Email, &record.CreatedAt)
+	}
 
 	loadMessage = func(rows *sql.Rows, record *Message) error {
 		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.CreatedAt)
@@ -89,6 +92,10 @@ func InsertUser(ctx context.Context, db *sql.DB, user *User) error {
 		user.CreatedAt,
 	)
 	return errors.Wrapf(err, "unable to insert user")
+}
+
+func GetUser(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
+	return ReadSingle(ctx, db, loadSingleUser, `SELECT * FROM users WHERE user_id = $1`, userId.String())
 }
 
 func ReadAllUsers(ctx context.Context, db *sql.DB) ([]*User, error) {

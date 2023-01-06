@@ -60,7 +60,8 @@ if [[ $DEPLOY_CHARTS == true ]]; then
     helm upgrade --install "$SERVER_RELEASE" \
         --namespace "${SCALING_NS}" \
         ../charts/server \
-        --values server-values.yaml
+        --values server-values.yaml \
+        --wait
 
     # loadgen
     helm upgrade --install "${LOADGEN_RELEASE}" \

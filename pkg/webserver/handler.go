@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mattfenwick/collections/pkg/json"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/pkg/errors"
@@ -17,20 +18,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
-
-type Responder interface {
-	Sleep(ctx context.Context, seconds string) error
-
-	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
-	CreateMessage(context.Context, *CreateMessageRequest) (*CreateMessageResponse, error)
-	Follow(context.Context, *FollowRequest) (*FollowResponse, error)
-	CreateUpvote(context.Context, *CreateUpvoteRequest) (*CreateUpvoteResponse, error)
-
-	IsLive(context.Context) bool
-	IsReady(context.Context) bool
-
-	Dump(ctx context.Context) (string, error)
-}
 
 func RequestHandler(r *http.Request, process func(ctx context.Context, body string, urlParams url.Values) (any, error)) (int, any, error) {
 	logrus.Infof("handling request: %s to %s", r.Method, r.URL.Path)
@@ -118,10 +105,15 @@ const (
 	ReadinessPath = "/readiness"
 
 	// core model
-	UsersPath     = "/users"
-	MessagesPath  = "/messages"
-	FollowersPath = "/followers"
-	UpvotesPath   = "/upvotes"
+	UserPath         = "/user"
+	UserTimelinePath = "/user/timeline"
+	UserMessagesPath = "/user/messages"
+	UsersPath        = "/users"
+	MessagePath      = "/message"
+	MessagesPath     = "/messages"
+	FollowPath       = "/follow"
+	FollowersPath    = "/followers"
+	UpvotePath       = "/upvote"
 
 	// hacks
 	DumpPath  = "/dump"
@@ -156,7 +148,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 		})), "handle readiness"))
 
 	// core model
-	serveMux.Handle(UsersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+	serveMux.Handle(UserPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
 				user, err := json.ParseString[CreateUserRequest](body)
@@ -165,9 +157,56 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				}
 				return responder.CreateUser(ctx, user)
 			},
-		})), "handle create user"))
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				userId, err := uuid.Parse(values.Get("userid"))
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to parse uuid from '%s'", values.Get("userid"))
+				}
+				request := &GetUserRequest{
+					UserId: userId,
+				}
+				return responder.GetUser(ctx, request)
+			},
+		})), "handle /user"))
 
-	serveMux.Handle(MessagesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+	serveMux.Handle(UserTimelinePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req, err := json.ParseString[GetUserTimelineRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.GetUserTimeline(ctx, req)
+			},
+		})), "handle user timeline"))
+
+	serveMux.Handle(UserMessagesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req, err := json.ParseString[GetUserMessagesRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.GetUserMessages(ctx, req)
+			},
+		})), "handle user messages"))
+
+	serveMux.Handle(UsersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req := &GetUsersRequest{}
+				return responder.GetUsers(ctx, req)
+			},
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req, err := json.ParseString[SearchUsersRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.SearchUsers(ctx, req)
+			},
+		})), "handle users"))
+
+	serveMux.Handle(MessagePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
 				message, err := json.ParseString[CreateMessageRequest](body)
@@ -177,6 +216,24 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.CreateMessage(ctx, message)
 			},
 		})), "handle create message"))
+
+	serveMux.Handle(MessagesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req, err := json.ParseString[GetMessagesRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.GetMessages(ctx, req)
+			},
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req, err := json.ParseString[SearchMessagesRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.SearchMessages(ctx, req)
+			},
+		})), "handle messages"))
 
 	serveMux.Handle(FollowersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
@@ -189,7 +246,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle follow"))
 
-	serveMux.Handle(UpvotesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+	serveMux.Handle(UpvotePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
 				upvote, err := json.ParseString[CreateUpvoteRequest](body)

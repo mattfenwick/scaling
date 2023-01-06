@@ -117,6 +117,18 @@ func (m *Model) CreateUser(ctx context.Context, req *CreateUserRequest) (*Create
 	return &CreateUserResponse{UserId: newUser.UserId}, nil
 }
 
+func (m *Model) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserResponse, error) {
+	user, err := database.GetUser(ctx, m.db, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	return &GetUserResponse{UserId: user.UserId, Name: user.Name, Email: user.Email}, nil
+}
+
+func (m *Model) GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
 func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*CreateMessageResponse, error) {
 	newMessage := database.NewMessage(req.SenderUserId, req.Content)
 	err := database.InsertMessage(ctx, m.db, newMessage)
@@ -124,6 +136,14 @@ func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*
 		return nil, err
 	}
 	return &CreateMessageResponse{MessageId: newMessage.MessageId}, nil
+}
+
+func (m *Model) GetMessage(context.Context, *GetMessageRequest) (*GetMessageResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
+func (m *Model) GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error) {
+	return nil, errors.Errorf("unimplemented")
 }
 
 func (m *Model) Follow(ctx context.Context, req *FollowRequest) (*FollowResponse, error) {
@@ -135,6 +155,10 @@ func (m *Model) Follow(ctx context.Context, req *FollowRequest) (*FollowResponse
 	return &FollowResponse{}, nil
 }
 
+func (m *Model) GetFollowers(context.Context, *GetFollowersOfUserRequest) (*GetFollowersOfUserResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
 func (m *Model) CreateUpvote(ctx context.Context, req *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
 	newUpvote := database.NewUpvote(req.UserId, req.MessageId)
 	err := database.InsertUpvote(ctx, m.db, newUpvote)
@@ -142,4 +166,20 @@ func (m *Model) CreateUpvote(ctx context.Context, req *CreateUpvoteRequest) (*Cr
 		return nil, err
 	}
 	return &CreateUpvoteResponse{UpvoteId: newUpvote.UpvoteId}, nil
+}
+
+func (m *Model) GetUserTimeline(context.Context, *GetUserTimelineRequest) (*GetUserTimelineResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
+func (m *Model) GetUserMessages(context.Context, *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
+func (m *Model) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
+func (m *Model) SearchMessages(context.Context, *SearchMessagesRequest) (*SearchMessagesResponse, error) {
+	return nil, errors.Errorf("unimplemented")
 }

@@ -20,21 +20,32 @@ func NewClient(url string) *Client {
 }
 
 func (c *Client) CreateUser(ctx context.Context, request *CreateUserRequest) (*CreateUserResponse, error) {
-	out, _, err := utils.RestyIssueRequest[CreateUserResponse](ctx, c.Resty, "POST", UsersPath, request, nil)
+	out, _, err := utils.RestyIssueRequest[CreateUserResponse](ctx, c.Resty, "POST", UserPath, request, nil)
+	return out, err
+}
+
+func (c *Client) GetUser(ctx context.Context, request *GetUserRequest) (*GetUserResponse, error) {
+	params := map[string]string{"userid": request.UserId.String()}
+	out, _, err := utils.RestyIssueRequest[GetUserResponse](ctx, c.Resty, "GET", UserPath, nil, params)
+	return out, err
+}
+
+func (c *Client) GetUsers(ctx context.Context, request *GetUsersRequest) (*GetUsersResponse, error) {
+	out, _, err := utils.RestyIssueRequest[GetUsersResponse](ctx, c.Resty, "GET", UsersPath, nil, nil)
 	return out, err
 }
 
 func (c *Client) CreateMessage(ctx context.Context, request *CreateMessageRequest) (*CreateMessageResponse, error) {
-	out, _, err := utils.RestyIssueRequest[CreateMessageResponse](ctx, c.Resty, "POST", MessagesPath, request, nil)
+	out, _, err := utils.RestyIssueRequest[CreateMessageResponse](ctx, c.Resty, "POST", MessagePath, request, nil)
 	return out, err
 }
 
 func (c *Client) CreateFollower(ctx context.Context, request *FollowRequest) (*FollowResponse, error) {
-	out, _, err := utils.RestyIssueRequest[FollowResponse](ctx, c.Resty, "POST", FollowersPath, request, nil)
+	out, _, err := utils.RestyIssueRequest[FollowResponse](ctx, c.Resty, "POST", FollowPath, request, nil)
 	return out, err
 }
 
 func (c *Client) CreateUpvote(ctx context.Context, request *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
-	out, _, err := utils.RestyIssueRequest[CreateUpvoteResponse](ctx, c.Resty, "POST", UpvotesPath, request, nil)
+	out, _, err := utils.RestyIssueRequest[CreateUpvoteResponse](ctx, c.Resty, "POST", UpvotePath, request, nil)
 	return out, err
 }
