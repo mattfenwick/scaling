@@ -32,6 +32,7 @@ loadgen:
       limits:
         cpu: 100m
         memory: 128Mi
+  mode: "create-users"
   binary: ""
   image: "webserver"
   webserver:

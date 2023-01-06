@@ -12,7 +12,7 @@ data:
         "ServicePort": 80
       },
       "Loadgen": {
-        "Mode": "users",
+        "Mode": "{{ .Values.loadgen.mode }}",
         "Workers": 5,
         "PauseMilliseconds": 500
       }

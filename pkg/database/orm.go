@@ -96,6 +96,8 @@ func ReadAllUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
 }
 
 func ReadUserById(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
+	// TODO consider using a prepared statement
+	//   https://go.dev/doc/database/prepared-statements
 	rows := db.QueryRowContext(ctx, "select * from users where user_id = $1", userId)
 
 	var record User

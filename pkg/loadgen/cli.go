@@ -20,7 +20,7 @@ func Cli(client *webserver.Client, config *Config) {
 	uploader := NewGenerator(ctx, client)
 
 	switch config.Mode {
-	case "users":
+	case "create-users":
 		uploader.CreateUsers(ctx, 10)
 	default:
 		utils.DoOrDie(errors.Errorf("invalid mode: %s", config.Mode))
