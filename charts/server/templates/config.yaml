@@ -15,6 +15,7 @@ data:
         "Host": {{ .Values.postgres.host | quote }},
         "User": {{ .Values.postgres.user | quote }},
         "Password": {{ .Values.postgres.password | quote }},
+        "AdminDatabase": "postgres",
         "Database": {{ .Values.postgres.dbname | quote }}
       },
       "Loadgen": {

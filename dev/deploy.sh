@@ -40,10 +40,6 @@ if [[ $BUILD_IMAGES == true ]]; then
     pushd ../cmd
         ./build.sh
     popd
-
-    pushd ../postgres
-        ./build-image.sh
-    popd
 fi
 
 

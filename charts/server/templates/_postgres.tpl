@@ -8,7 +8,5 @@
 - name: PGPASSWORD
   value: {{ .Values.postgres.password | quote }}
 - name: PGDATABASE
-  value: "postgres"
-- name: SCALING_DATABASE
   value: {{ .Values.postgres.dbname | quote }}
 {{- end }}

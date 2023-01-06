@@ -12,8 +12,6 @@ loadgen:
     host: "my-scaling-server-webserver"
 
 postgres:
-  initializeJob:
-    enabled: false
   psqlHack:
     enabled: false
 

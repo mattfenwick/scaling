@@ -43,9 +43,7 @@ postgres:
   host: "my-pg-postgresql"
   password: "postgres"
   dbname: "scaling"
-  image: "scaling-database"
-  initializeJob:
-    enabled: true
+  image: "docker.io/bitnami/postgresql:14.3.0-debian-10-r20"
   psqlHack:
     enabled: false
 

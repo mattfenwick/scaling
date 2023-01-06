@@ -8,9 +8,6 @@ loadgen:
     enabled: false
 
 postgres:
-  image: "localhost:5000/scaling-database:latest"
-  initializeJob:
-    enabled: true
   psqlHack:
     enabled: true
 
