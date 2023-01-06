@@ -122,6 +122,9 @@ func (m *Model) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserRespo
 	if err != nil {
 		return nil, err
 	}
+	if user == nil {
+		return nil, nil
+	}
 	return &GetUserResponse{UserId: user.UserId, Name: user.Name, Email: user.Email}, nil
 }
 

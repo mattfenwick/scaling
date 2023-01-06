@@ -95,6 +95,8 @@ func InsertUser(ctx context.Context, db *sql.DB, user *User) error {
 }
 
 func GetUser(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
+	// TODO consider using a prepared statement
+	//   https://go.dev/doc/database/prepared-statements
 	return ReadSingle(ctx, db, loadSingleUser, `SELECT * FROM users WHERE user_id = $1`, userId.String())
 }
 
@@ -103,8 +105,6 @@ func ReadAllUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
 }
 
 func ReadUserById(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
-	// TODO consider using a prepared statement
-	//   https://go.dev/doc/database/prepared-statements
 	rows := db.QueryRowContext(ctx, "select * from users where user_id = $1", userId)
 
 	var record User

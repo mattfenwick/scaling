@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,8 +20,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func isNil(v any) bool {
+	// source:
+	//   https://gist.github.com/miguelmota/faca748b3c8598f2abf322b51b542d24
+	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+}
+
 func RequestHandler(r *http.Request, process func(ctx context.Context, body string, urlParams url.Values) (any, error)) (int, any, error) {
-	logrus.Infof("handling request: %s to %s", r.Method, r.URL.Path)
+	logrus.Debugf("handling request: %s to %s", r.Method, r.URL.Path)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -70,13 +77,14 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 		}
 
 		code, response, err = RequestHandler(r, handler)
+		logrus.Debugf("handled %s to %s: response %+v (is nil? %t) (provisional code %d), err %+v", r.Method, r.URL.Path, response, isNil(response), code, err)
 
 		logrus.Debugf("response code: %d; err? %t", code, err != nil)
 		if err != nil {
 			logrus.Errorf("http error: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 			http.Error(w, err.Error(), code)
 			return
-		} else if response == nil {
+		} else if isNil(response) { // response == nil {
 			code = 404
 			logrus.Errorf("http not found: %s to %s, code %d, error %+v", r.Method, r.URL.Path, code, err)
 			http.NotFound(w, r)
@@ -94,7 +102,7 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 		} else if n < len(body) {
 			logrus.Errorf("failed to print full body: %d / %d", n, len(body))
 		} else {
-			logrus.Infof("wrote %d / %d bytes to response successfully", n, len(body))
+			logrus.Debugf("wrote %d / %d bytes to response successfully", n, len(body))
 		}
 	}
 }

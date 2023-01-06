@@ -82,6 +82,9 @@ func DoesDatabaseExist(ctx context.Context, db *sql.DB, databaseName string) (bo
 	if err != nil {
 		return false, err
 	}
+	if count == nil {
+		return false, errors.Errorf("expected 1 result, found 0")
+	}
 	return *count == 1, nil
 }
 

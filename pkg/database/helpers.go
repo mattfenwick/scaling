@@ -39,10 +39,9 @@ func ReadMany[A any](ctx context.Context, db *sql.DB, process func(*sql.Rows, *A
 func ReadSingle[A any](ctx context.Context, db *sql.DB, process func(*sql.Row, *A) error, query string, args ...any) (*A, error) {
 	var record A
 	if err := process(db.QueryRowContext(ctx, query, args...), &record); err != nil {
-		// TODO does ErrNoRows specifically matter?
-		// if err == sql.ErrNoRows {
-		// 	return ???
-		// }
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
 		return nil, errors.Wrapf(err, "unable to run query '%s' with args '%+v'", query, args)
 	}
 	logrus.Tracef("ReadSingle result: %+v", record)
