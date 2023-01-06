@@ -92,7 +92,7 @@ func InsertUser(ctx context.Context, db *sql.DB, user *User) error {
 }
 
 func ReadAllUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
-	return ReadMany[User](ctx, db, loadUser, "select * from users")
+	return ReadMany(ctx, db, loadUser, "select * from users")
 }
 
 func ReadUserById(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
@@ -134,11 +134,11 @@ func ReadAllFollowers(ctx context.Context, db *sql.DB) ([]*Follower, error) {
 	process := func(rows *sql.Rows, record *Follower) error {
 		return rows.Scan(&record.FolloweeUserId, &record.FollowerUserId, &record.CreatedAt)
 	}
-	return ReadMany[Follower](ctx, db, process, "select * from followers")
+	return ReadMany(ctx, db, process, "select * from followers")
 }
 
 func ReadFollowersOf(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*User, error) {
-	return ReadMany[User](ctx, db, loadUser, readFollowersOfQueryTemplate, userId)
+	return ReadMany(ctx, db, loadUser, readFollowersOfQueryTemplate, userId)
 }
 
 // Messages
@@ -166,7 +166,7 @@ func InsertMessage(ctx context.Context, db *sql.DB, message *Message) error {
 }
 
 func ReadAllMessages(ctx context.Context, db *sql.DB) ([]*Message, error) {
-	return ReadMany[Message](ctx, db, loadMessage, "select * from messages")
+	return ReadMany(ctx, db, loadMessage, "select * from messages")
 }
 
 type MessageUpvoteCount struct {
@@ -178,7 +178,7 @@ type MessageUpvoteCount struct {
 }
 
 func ReadMessagesForUser(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*MessageUpvoteCount, error) {
-	return ReadMany[MessageUpvoteCount](ctx, db, loadMessageUpvoteCount, readMessagesFromUserAndFollowersTemplate, userId)
+	return ReadMany(ctx, db, loadMessageUpvoteCount, readMessagesFromUserAndFollowersTemplate, userId)
 }
 
 // Upvotes
@@ -209,5 +209,5 @@ func ReadAllUpvotes(ctx context.Context, db *sql.DB) ([]*Upvote, error) {
 	process := func(rows *sql.Rows, record *Upvote) error {
 		return rows.Scan(&record.UpvoteId, &record.UserId, &record.MessageId, &record.CreatedAt)
 	}
-	return ReadMany[Upvote](ctx, db, process, "select * from upvotes")
+	return ReadMany(ctx, db, process, "select * from upvotes")
 }

@@ -78,7 +78,7 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 		handler, ok := methodHandlers[r.Method]
 		if !ok {
 			logrus.Errorf("method %s not allowed for %s", r.Method, r.URL.Path)
-			http.Error(w, "method not allowed", 405)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
@@ -98,7 +98,8 @@ func Handler(maxSize int64, methodHandlers map[string]func(ctx context.Context, 
 
 		header := w.Header()
 		w.WriteHeader(code)
-		header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
+		// header.Set(http.CanonicalHeaderKey("content-type"), "application/json")
+		header.Set("content-type", "application/json")
 		body := json.MustMarshalToString(response)
 		n, err := fmt.Fprint(w, body)
 		if err != nil {
