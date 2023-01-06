@@ -13,6 +13,7 @@
     "User": "postgres",
     "Password": "postgres",
     "Host": "localhost",
+    "AdminDatabase": "postgres",
     "Database": "hack"
   },
 

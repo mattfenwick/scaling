@@ -34,8 +34,23 @@ func RunWithConfig(mode string, config *Config) {
 	utils.DoOrDie(err)
 
 	switch mode {
+	case "schema":
+		pg := config.Postgres
+
+		adminDb, err := database.Connect(pg.User, pg.Password, pg.Host, pg.AdminDatabase)
+		utils.DoOrDie(err)
+		utils.DoOrDie(database.CreateDatabaseIfNotExists(rootContext, adminDb, pg.Database))
+
+		db, err := database.Connect(pg.User, pg.Password, pg.Host, pg.Database)
+		utils.DoOrDie(err)
+		utils.DoOrDie(database.InitializeSchema(rootContext, db))
 	case "webserver":
 		pg := config.Postgres
+
+		adminDb, err := database.Connect(pg.User, pg.Password, pg.Host, pg.AdminDatabase)
+		utils.DoOrDie(err)
+		utils.DoOrDie(database.CreateDatabaseIfNotExists(rootContext, adminDb, pg.Database))
+
 		db, err := database.Connect(pg.User, pg.Password, pg.Host, pg.Database)
 		utils.DoOrDie(err)
 		webserver.Run(config.Webserver.ContainerPort, tp, db)

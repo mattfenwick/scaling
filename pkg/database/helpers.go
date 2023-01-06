@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func ReadMany[A any](ctx context.Context, db *sql.DB, process func(*sql.Rows, *A) error, query string, args ...any) ([]*A, error) {
@@ -33,4 +34,23 @@ func ReadMany[A any](ctx context.Context, db *sql.DB, process func(*sql.Rows, *A
 	}
 
 	return records, nil
+}
+
+func ReadSingle[A any](ctx context.Context, db *sql.DB, process func(*sql.Row, *A) error, query string, args ...any) (*A, error) {
+	var record A
+	if err := process(db.QueryRowContext(ctx, query, args...), &record); err != nil {
+		// TODO does ErrNoRows specifically matter?
+		// if err == sql.ErrNoRows {
+		// 	return ???
+		// }
+		return nil, errors.Wrapf(err, "unable to run query '%s' with args '%+v'", query, args)
+	}
+	logrus.Tracef("ReadSingle result: %+v", record)
+	return &record, nil
+}
+
+func RunStatement(ctx context.Context, db *sql.DB, query string, args ...any) (sql.Result, error) {
+	logrus.Tracef("running SQL query: '%s' with args '%+v'", query, args)
+	result, err := db.ExecContext(ctx, query, args...)
+	return result, errors.Wrapf(err, "unable to run query '%s' with args '%+v'", query, args)
 }

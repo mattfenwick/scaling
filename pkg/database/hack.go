@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/pkg/errors"
 )
 
@@ -160,6 +161,7 @@ where
 
 		var orderRef = "ABC123"
 		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		utils.DoOrDie(err)
 		_, err = tx.ExecContext(ctx, "stored_proc_name", orderRef)
 
 		if err != nil {

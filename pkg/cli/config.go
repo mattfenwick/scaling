@@ -19,8 +19,9 @@ type Config struct {
 }
 
 type PostgresConfig struct {
-	Host     string
-	User     string
-	Password string
-	Database string
+	Host          string
+	User          string
+	Password      string
+	AdminDatabase string
+	Database      string
 }
