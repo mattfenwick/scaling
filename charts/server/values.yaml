@@ -7,14 +7,15 @@ logLevel: "info"
 
 
 ingress:
-  enabled: false
+  enabled: true
   className: "nginx"
-  hosts:
-    - host: scaling-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
+  host: "scaling-example.local"
+  # hosts:
+  #   - host: scaling-example.local
+  #     paths:
+  #       - path: /
+  #         pathType: ImplementationSpecific
+  # tls: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - scaling-example.local

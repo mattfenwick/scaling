@@ -2,13 +2,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "scaling.fullname" . | quote }}
+  name: {{ include "scaling.fullname" . }}-webserver
 spec:
   ingressClassName: {{ .Values.ingress.className | quote }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.host | quote }}
-      secretName: {{ .Values.ingress.tlsSecret | quote }}
   rules:
     - host: {{ .Values.ingress.host | quote }}
       http:
@@ -17,7 +13,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: "webserver"
+                name: {{ include "scaling.fullname" . }}-webserver
                 port:
                   number: 80
 {{- end }}
