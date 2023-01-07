@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/collections/pkg/slice"
 	"github.com/mattfenwick/scaling/pkg/database"
 	"github.com/mattfenwick/scaling/pkg/telemetry"
 	"github.com/pkg/errors"
@@ -128,8 +129,19 @@ func (m *Model) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserRespo
 	return &GetUserResponse{UserId: user.UserId, Name: user.Name, Email: user.Email}, nil
 }
 
-func (m *Model) GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error) {
-	return nil, errors.Errorf("unimplemented")
+func (m *Model) GetUsers(ctx context.Context, req *GetUsersRequest) (*GetUsersResponse, error) {
+	users, err := database.GetUsers(ctx, m.db)
+	if err != nil {
+		return nil, err
+	}
+	f := func(d *database.User) GetUserResponse {
+		return GetUserResponse{
+			UserId: d.UserId,
+			Name:   d.Name,
+			Email:  d.Email,
+		}
+	}
+	return &GetUsersResponse{Users: slice.Map(f, users)}, nil
 }
 
 func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*CreateMessageResponse, error) {

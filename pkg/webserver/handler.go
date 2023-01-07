@@ -175,7 +175,22 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				}
 				return responder.GetUser(ctx, request)
 			},
-		})), "handle /user"))
+		})), "handle user"))
+
+	serveMux.Handle(UsersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req := &GetUsersRequest{}
+				return responder.GetUsers(ctx, req)
+			},
+			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
+				req, err := json.ParseString[SearchUsersRequest](body)
+				if err != nil {
+					return nil, err
+				}
+				return responder.SearchUsers(ctx, req)
+			},
+		})), "handle users"))
 
 	serveMux.Handle(UserTimelinePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
@@ -198,21 +213,6 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.GetUserMessages(ctx, req)
 			},
 		})), "handle user messages"))
-
-	serveMux.Handle(UsersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
-		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
-			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				req := &GetUsersRequest{}
-				return responder.GetUsers(ctx, req)
-			},
-			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
-				req, err := json.ParseString[SearchUsersRequest](body)
-				if err != nil {
-					return nil, err
-				}
-				return responder.SearchUsers(ctx, req)
-			},
-		})), "handle users"))
 
 	serveMux.Handle(MessagePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){

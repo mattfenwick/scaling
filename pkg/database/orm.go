@@ -100,19 +100,8 @@ func GetUser(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
 	return ReadSingle(ctx, db, loadSingleUser, `SELECT * FROM users WHERE user_id = $1`, userId.String())
 }
 
-func ReadAllUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
+func GetUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
 	return ReadMany(ctx, db, loadUser, "select * from users")
-}
-
-func ReadUserById(ctx context.Context, db *sql.DB, userId uuid.UUID) (*User, error) {
-	rows := db.QueryRowContext(ctx, "select * from users where user_id = $1", userId)
-
-	var record User
-	err := rows.Scan(&record.UserId, &record.Name, &record.Email, &record.CreatedAt)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to load row")
-	}
-	return &record, nil
 }
 
 // Followers

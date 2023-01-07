@@ -30,7 +30,7 @@ func main() {
 	err = database.InsertUser(ctx, db, user2)
 	utils.DoOrDie(err)
 
-	users, err := database.ReadAllUsers(ctx, db)
+	users, err := database.GetUsers(ctx, db)
 	utils.DoOrDie(err)
 	fmt.Printf("users: %s\n", json.MustMarshalToString(users))
 
@@ -70,7 +70,7 @@ func main() {
 	fmt.Printf("upvotes: %s\n", json.MustMarshalToString(upvotes))
 
 	// find followers by user
-	allUsers, err := database.ReadAllUsers(ctx, db)
+	allUsers, err := database.GetUsers(ctx, db)
 	utils.DoOrDie(err)
 	for _, user := range allUsers {
 		userFollowers, err := database.ReadFollowersOf(ctx, db, user.UserId)
