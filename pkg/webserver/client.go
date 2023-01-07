@@ -19,6 +19,8 @@ func NewClient(url string) *Client {
 	}
 }
 
+// users
+
 func (c *Client) CreateUser(ctx context.Context, request *CreateUserRequest) (*CreateUserResponse, error) {
 	out, _, err := utils.RestyIssueRequest[CreateUserResponse](ctx, c.Resty, "POST", UserPath, request, nil)
 	return out, err
@@ -40,10 +42,24 @@ func (c *Client) SearchUsers(ctx context.Context, request *SearchUsersRequest) (
 	return out, err
 }
 
+func (c *Client) GetUserTimeline(ctx context.Context, request *GetUserTimelineRequest) (*GetUserTimelineResponse, error) {
+	out, _, err := utils.RestyIssueRequest[GetUserTimelineResponse](ctx, c.Resty, "POST", UsersPath, request, nil)
+	return out, err
+}
+
+func (c *Client) GetUserMessages(ctx context.Context, request *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
+	out, _, err := utils.RestyIssueRequest[GetUserMessagesResponse](ctx, c.Resty, "POST", UsersPath, request, nil)
+	return out, err
+}
+
+// messages
+
 func (c *Client) CreateMessage(ctx context.Context, request *CreateMessageRequest) (*CreateMessageResponse, error) {
 	out, _, err := utils.RestyIssueRequest[CreateMessageResponse](ctx, c.Resty, "POST", MessagePath, request, nil)
 	return out, err
 }
+
+// follow/upvote
 
 func (c *Client) CreateFollower(ctx context.Context, request *FollowRequest) (*FollowResponse, error) {
 	out, _, err := utils.RestyIssueRequest[FollowResponse](ctx, c.Resty, "POST", FollowPath, request, nil)

@@ -31,21 +31,6 @@ type GetUsersResponse struct {
 	Users []GetUserResponse
 }
 
-type GetUserTimelineRequest struct {
-}
-
-type GetUserTimelineResponse struct {
-}
-
-type GetMessagesForUserRequest struct {
-	UserId string
-	// TODO paginate
-}
-
-type GetMessagesForUserResponse struct {
-	Messages []GetMessageResponse
-}
-
 type SearchUsersRequest struct {
 	NamePattern  string
 	EmailPattern string
@@ -57,9 +42,23 @@ type SearchUsersResponse struct {
 }
 
 type GetUserMessagesRequest struct {
+	UserId uuid.UUID
+	// TODO paginate
 }
 
 type GetUserMessagesResponse struct {
+	UserId   uuid.UUID
+	Messages []GetMessageResponse
+}
+
+type GetUserTimelineRequest struct {
+	UserId uuid.UUID
+	// TODO paginate
+}
+
+type GetUserTimelineResponse struct {
+	UserId   uuid.UUID
+	Messages []GetMessageResponse
 }
 
 // messages

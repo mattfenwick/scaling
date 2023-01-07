@@ -21,7 +21,28 @@ const (
 	where 
 		followers.followee_user_id = $1`
 
-	readMessagesFromUserAndFollowersTemplate = `
+	// TODO upvote counts
+	getUserMessagesTemplate = `
+	with upvote_counts as (
+		select message_id, -1 as upvotes
+		from messages
+	  )
+	select
+		messages.message_id,
+		messages.sender_user_id,
+		messages.content,
+		upvote_counts.upvotes,
+		messages.created_at
+	from messages
+	left join
+	    upvote_counts
+	on
+	  	messages.message_id = upvote_counts.message_id
+	where
+		messages.sender_user_id = $1`
+
+	// TODO the upvote counts bit seems totally wrong ... ?
+	getUserTimelineTemplate = `
 	with userids as (
 		select 
 			$1 as user_id
@@ -65,7 +86,7 @@ var (
 		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.CreatedAt)
 	}
 
-	loadMessageUpvoteCount = func(rows *sql.Rows, record *MessageUpvoteCount) error {
+	loadTimelineMessage = func(rows *sql.Rows, record *TimelineMessage) error {
 		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.UpvoteCount, &record.CreatedAt)
 	}
 )
@@ -113,6 +134,22 @@ func SearchUsers(ctx context.Context, db *sql.DB, namePattern string, emailPatte
 		"select * from users where name ilike $1 and email ilike $2",
 		regexWrap(namePattern),
 		regexWrap(emailPattern))
+}
+
+type TimelineMessage struct {
+	MessageId    uuid.UUID
+	SenderUserId uuid.UUID
+	Content      string
+	UpvoteCount  int
+	CreatedAt    time.Time
+}
+
+func GetUserTimeline(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*TimelineMessage, error) {
+	return ReadMany(ctx, db, loadTimelineMessage, getUserTimelineTemplate, userId)
+}
+
+func GetUserMessages(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*TimelineMessage, error) {
+	return ReadMany(ctx, db, loadTimelineMessage, getUserMessagesTemplate, userId)
 }
 
 // Followers
@@ -174,18 +211,6 @@ func InsertMessage(ctx context.Context, db *sql.DB, message *Message) error {
 
 func ReadAllMessages(ctx context.Context, db *sql.DB) ([]*Message, error) {
 	return ReadMany(ctx, db, loadMessage, "select * from messages")
-}
-
-type MessageUpvoteCount struct {
-	MessageId    uuid.UUID
-	SenderUserId uuid.UUID
-	Content      string
-	UpvoteCount  int
-	CreatedAt    time.Time
-}
-
-func ReadMessagesForUser(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*MessageUpvoteCount, error) {
-	return ReadMany(ctx, db, loadMessageUpvoteCount, readMessagesFromUserAndFollowersTemplate, userId)
 }
 
 // Upvotes

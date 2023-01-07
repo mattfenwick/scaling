@@ -109,6 +109,8 @@ func (m *Model) Sleep(ctx context.Context, milliseconds string) error {
 	}
 }
 
+// users
+
 func (m *Model) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
 	newUser := database.NewUser(req.Name, req.Email)
 	err := database.InsertUser(ctx, m.db, newUser)
@@ -153,6 +155,33 @@ func (m *Model) SearchUsers(ctx context.Context, req *SearchUsersRequest) (*Sear
 	return &SearchUsersResponse{Users: slice.Map(mapUser, users)}, nil
 }
 
+func mapMessage(m *database.TimelineMessage) GetMessageResponse {
+	return GetMessageResponse{
+		MessageId:    m.MessageId,
+		SenderUserId: m.SenderUserId,
+		Content:      m.Content,
+		UpvoteCount:  m.UpvoteCount,
+	}
+}
+
+func (m *Model) GetUserTimeline(ctx context.Context, req *GetUserTimelineRequest) (*GetUserTimelineResponse, error) {
+	messages, err := database.GetUserTimeline(ctx, m.db, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	return &GetUserTimelineResponse{UserId: req.UserId, Messages: slice.Map(mapMessage, messages)}, nil
+}
+
+func (m *Model) GetUserMessages(ctx context.Context, req *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
+	messages, err := database.GetUserMessages(ctx, m.db, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	return &GetUserMessagesResponse{UserId: req.UserId, Messages: slice.Map(mapMessage, messages)}, nil
+}
+
+// messages
+
 func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*CreateMessageResponse, error) {
 	newMessage := database.NewMessage(req.SenderUserId, req.Content)
 	err := database.InsertMessage(ctx, m.db, newMessage)
@@ -169,6 +198,12 @@ func (m *Model) GetMessage(context.Context, *GetMessageRequest) (*GetMessageResp
 func (m *Model) GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error) {
 	return nil, errors.Errorf("unimplemented")
 }
+
+func (m *Model) SearchMessages(context.Context, *SearchMessagesRequest) (*SearchMessagesResponse, error) {
+	return nil, errors.Errorf("unimplemented")
+}
+
+// follow/upvote
 
 func (m *Model) Follow(ctx context.Context, req *FollowRequest) (*FollowResponse, error) {
 	newFollower := database.NewFollower(req.FolloweeUserId, req.FollowerUserId)
@@ -190,16 +225,4 @@ func (m *Model) CreateUpvote(ctx context.Context, req *CreateUpvoteRequest) (*Cr
 		return nil, err
 	}
 	return &CreateUpvoteResponse{UpvoteId: newUpvote.UpvoteId}, nil
-}
-
-func (m *Model) GetUserTimeline(context.Context, *GetUserTimelineRequest) (*GetUserTimelineResponse, error) {
-	return nil, errors.Errorf("unimplemented")
-}
-
-func (m *Model) GetUserMessages(context.Context, *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
-	return nil, errors.Errorf("unimplemented")
-}
-
-func (m *Model) SearchMessages(context.Context, *SearchMessagesRequest) (*SearchMessagesResponse, error) {
-	return nil, errors.Errorf("unimplemented")
 }
