@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -85,6 +86,9 @@ var (
 	loadMessage = func(rows *sql.Rows, record *Message) error {
 		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.CreatedAt)
 	}
+	loadSingleMessage = func(rows *sql.Row, record *Message) error {
+		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.CreatedAt)
+	}
 
 	loadTimelineMessage = func(rows *sql.Rows, record *TimelineMessage) error {
 		return rows.Scan(&record.MessageId, &record.SenderUserId, &record.Content, &record.UpvoteCount, &record.CreatedAt)
@@ -152,6 +156,38 @@ func GetUserMessages(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*Time
 	return ReadMany(ctx, db, loadTimelineMessage, getUserMessagesTemplate, userId)
 }
 
+// Messages
+
+type Message struct {
+	MessageId    uuid.UUID
+	SenderUserId uuid.UUID
+	Content      string
+	CreatedAt    time.Time
+}
+
+func NewMessage(senderUserId uuid.UUID, content string) *Message {
+	return &Message{MessageId: uuid.New(), SenderUserId: senderUserId, Content: content, CreatedAt: time.Now()}
+}
+
+func InsertMessage(ctx context.Context, db *sql.DB, message *Message) error {
+	_, err := db.ExecContext(ctx,
+		"INSERT INTO messages (message_id, sender_user_id, content, created_at) VALUES ($1, $2, $3, $4)",
+		message.MessageId,
+		message.SenderUserId,
+		message.Content,
+		message.CreatedAt,
+	)
+	return errors.Wrapf(err, "unable to insert follower")
+}
+
+func GetMessage(ctx context.Context, db *sql.DB, messageId uuid.UUID) (*Message, error) {
+	return ReadSingle(ctx, db, loadSingleMessage, `SELECT * FROM messages WHERE message_id = $1`, messageId.String())
+}
+
+func GetMessages(ctx context.Context, db *sql.DB) ([]*Message, error) {
+	return ReadMany(ctx, db, loadMessage, "select * from messages")
+}
+
 // Followers
 
 type Follower struct {
@@ -185,34 +221,6 @@ func ReadFollowersOf(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*User
 	return ReadMany(ctx, db, loadUser, readFollowersOfQueryTemplate, userId)
 }
 
-// Messages
-
-type Message struct {
-	MessageId    uuid.UUID
-	SenderUserId uuid.UUID
-	Content      string
-	CreatedAt    time.Time
-}
-
-func NewMessage(senderUserId uuid.UUID, content string) *Message {
-	return &Message{MessageId: uuid.New(), SenderUserId: senderUserId, Content: content, CreatedAt: time.Now()}
-}
-
-func InsertMessage(ctx context.Context, db *sql.DB, message *Message) error {
-	_, err := db.ExecContext(ctx,
-		"INSERT INTO messages (message_id, sender_user_id, content, created_at) VALUES ($1, $2, $3, $4)",
-		message.MessageId,
-		message.SenderUserId,
-		message.Content,
-		message.CreatedAt,
-	)
-	return errors.Wrapf(err, "unable to insert follower")
-}
-
-func ReadAllMessages(ctx context.Context, db *sql.DB) ([]*Message, error) {
-	return ReadMany(ctx, db, loadMessage, "select * from messages")
-}
-
 // Upvotes
 
 type Upvote struct {
@@ -242,4 +250,32 @@ func ReadAllUpvotes(ctx context.Context, db *sql.DB) ([]*Upvote, error) {
 		return rows.Scan(&record.UpvoteId, &record.UserId, &record.MessageId, &record.CreatedAt)
 	}
 	return ReadMany(ctx, db, process, "select * from upvotes")
+}
+
+// debug
+
+func GetTableSizes(ctx context.Context, db *sql.DB) (map[string]int, error) {
+	tableNames := []string{
+		"users",
+		"messages",
+		"followers",
+		"upvotes",
+		"topics",
+		"pings",
+	}
+	process := func(row *sql.Row, out *int) error {
+		return errors.Wrapf(row.Scan(out), "unable to fetch row")
+	}
+	rowCounts := map[string]int{}
+	for _, table := range tableNames {
+		count, err := ReadSingle(ctx, db, process, fmt.Sprintf(`SELECT count(*) FROM %s`, table))
+		if err != nil {
+			return nil, err
+		}
+		if count == nil {
+			return nil, errors.Errorf("unable to get row size for table %s", table)
+		}
+		rowCounts[table] = *count
+	}
+	return rowCounts, nil
 }

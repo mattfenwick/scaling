@@ -52,7 +52,7 @@ func main() {
 	err = database.InsertMessage(ctx, db, message2)
 	utils.DoOrDie(err)
 
-	messages, err := database.ReadAllMessages(ctx, db)
+	messages, err := database.GetMessages(ctx, db)
 	utils.DoOrDie(err)
 	fmt.Printf("messages: %s\n", json.MustMarshalToString(messages))
 

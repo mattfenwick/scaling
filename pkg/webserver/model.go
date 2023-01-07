@@ -128,7 +128,8 @@ func (m *Model) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserRespo
 	if user == nil {
 		return nil, nil
 	}
-	return &GetUserResponse{UserId: user.UserId, Name: user.Name, Email: user.Email}, nil
+	mappedUser := mapUser(user)
+	return &mappedUser, nil
 }
 
 func mapUser(d *database.User) GetUserResponse {
@@ -155,7 +156,7 @@ func (m *Model) SearchUsers(ctx context.Context, req *SearchUsersRequest) (*Sear
 	return &SearchUsersResponse{Users: slice.Map(mapUser, users)}, nil
 }
 
-func mapMessage(m *database.TimelineMessage) GetMessageResponse {
+func mapTimelineMessage(m *database.TimelineMessage) GetMessageResponse {
 	return GetMessageResponse{
 		MessageId:    m.MessageId,
 		SenderUserId: m.SenderUserId,
@@ -169,7 +170,7 @@ func (m *Model) GetUserTimeline(ctx context.Context, req *GetUserTimelineRequest
 	if err != nil {
 		return nil, err
 	}
-	return &GetUserTimelineResponse{UserId: req.UserId, Messages: slice.Map(mapMessage, messages)}, nil
+	return &GetUserTimelineResponse{UserId: req.UserId, Messages: slice.Map(mapTimelineMessage, messages)}, nil
 }
 
 func (m *Model) GetUserMessages(ctx context.Context, req *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
@@ -177,7 +178,7 @@ func (m *Model) GetUserMessages(ctx context.Context, req *GetUserMessagesRequest
 	if err != nil {
 		return nil, err
 	}
-	return &GetUserMessagesResponse{UserId: req.UserId, Messages: slice.Map(mapMessage, messages)}, nil
+	return &GetUserMessagesResponse{UserId: req.UserId, Messages: slice.Map(mapTimelineMessage, messages)}, nil
 }
 
 // messages
@@ -191,12 +192,32 @@ func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*
 	return &CreateMessageResponse{MessageId: newMessage.MessageId}, nil
 }
 
-func (m *Model) GetMessage(context.Context, *GetMessageRequest) (*GetMessageResponse, error) {
-	return nil, errors.Errorf("unimplemented")
+func mapMessage(m *database.Message) GetMessageResponse {
+	return GetMessageResponse{
+		MessageId:    m.MessageId,
+		SenderUserId: m.SenderUserId,
+		Content:      m.Content,
+	}
 }
 
-func (m *Model) GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error) {
-	return nil, errors.Errorf("unimplemented")
+func (m *Model) GetMessage(ctx context.Context, req *GetMessageRequest) (*GetMessageResponse, error) {
+	message, err := database.GetMessage(ctx, m.db, req.MessageId)
+	if err != nil {
+		return nil, err
+	}
+	if message == nil {
+		return nil, nil
+	}
+	mappedMessage := mapMessage(message)
+	return &mappedMessage, nil
+}
+
+func (m *Model) GetMessages(ctx context.Context, req *GetMessagesRequest) (*GetMessagesResponse, error) {
+	messages, err := database.GetMessages(ctx, m.db)
+	if err != nil {
+		return nil, err
+	}
+	return &GetMessagesResponse{Messages: slice.Map(mapMessage, messages)}, nil
 }
 
 func (m *Model) SearchMessages(context.Context, *SearchMessagesRequest) (*SearchMessagesResponse, error) {

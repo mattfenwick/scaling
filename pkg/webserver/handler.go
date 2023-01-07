@@ -155,7 +155,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle readiness"))
 
-	// core model
+	// users
 	serveMux.Handle(UserPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
@@ -214,6 +214,8 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle user messages"))
 
+	// messages
+
 	serveMux.Handle(MessagePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
@@ -223,15 +225,22 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				}
 				return responder.CreateMessage(ctx, message)
 			},
-		})), "handle create message"))
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				messageId, err := uuid.Parse(values.Get("messageid"))
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to parse uuid from '%s'", values.Get("messageid"))
+				}
+				request := &GetMessageRequest{
+					MessageId: messageId,
+				}
+				return responder.GetMessage(ctx, request)
+			},
+		})), "handle message"))
 
 	serveMux.Handle(MessagesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				req, err := json.ParseString[GetMessagesRequest](body) // TODO wrong, use values
-				if err != nil {
-					return nil, err
-				}
+				req := &GetMessagesRequest{}
 				return responder.GetMessages(ctx, req)
 			},
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
@@ -242,6 +251,8 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.SearchMessages(ctx, req)
 			},
 		})), "handle messages"))
+
+	// follow/upvote
 
 	serveMux.Handle(FollowPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){

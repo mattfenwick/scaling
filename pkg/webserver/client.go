@@ -59,10 +59,32 @@ func (c *Client) CreateMessage(ctx context.Context, request *CreateMessageReques
 	return out, err
 }
 
+func (c *Client) GetMessage(ctx context.Context, request *GetMessageRequest) (*GetMessageResponse, error) {
+	params := map[string]string{"messageid": request.MessageId.String()}
+	out, _, err := utils.RestyIssueRequest[GetMessageResponse](ctx, c.Resty, "GET", MessagePath, nil, params)
+	return out, err
+}
+
+func (c *Client) GetMessages(ctx context.Context, request *GetMessagesRequest) (*GetMessagesResponse, error) {
+	out, _, err := utils.RestyIssueRequest[GetMessagesResponse](ctx, c.Resty, "GET", MessagesPath, request, nil)
+	return out, err
+}
+
+func (c *Client) SearchMessages(ctx context.Context, request *SearchMessagesRequest) (*SearchMessagesResponse, error) {
+	out, _, err := utils.RestyIssueRequest[SearchMessagesResponse](ctx, c.Resty, "POST", MessagesPath, request, nil)
+	return out, err
+}
+
 // follow/upvote
 
 func (c *Client) FollowUser(ctx context.Context, request *FollowRequest) (*FollowResponse, error) {
 	out, _, err := utils.RestyIssueRequest[FollowResponse](ctx, c.Resty, "POST", FollowPath, request, nil)
+	return out, err
+}
+
+func (c *Client) GetFollowers(ctx context.Context, request *GetFollowersOfUserRequest) (*GetFollowersOfUserResponse, error) {
+	params := map[string]string{"userid": request.UserId.String()}
+	out, _, err := utils.RestyIssueRequest[GetFollowersOfUserResponse](ctx, c.Resty, "GET", FollowersPath, nil, params)
 	return out, err
 }
 

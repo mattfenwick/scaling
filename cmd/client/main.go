@@ -51,6 +51,12 @@ func main() {
 		}
 
 		userTimelineAndMessageTest(db, myClient)
+
+		if false {
+			messagesTest(myClient)
+		}
+
+		tableSizes(db)
 	} else {
 		cli.Run()
 	}
@@ -121,4 +127,22 @@ func userTimelineAndMessageTest(db *sql.DB, client *webserver.Client) {
 		utils.DoOrDie(err)
 		fmt.Printf("(client) user2 (%s) timeline and messages:\n%s\n\n", user2.UserId.String(), json.MustMarshalToString(map[string]any{"timeline": timeline2, "messages": messages2}))
 	}
+}
+
+func messagesTest(client *webserver.Client) {
+	messages, err := client.GetMessages(context.TODO(), &webserver.GetMessagesRequest{})
+	utils.DoOrDie(err)
+
+	for _, message := range messages.Messages {
+		refetchedMessage, err := client.GetMessage(context.TODO(), &webserver.GetMessageRequest{MessageId: message.MessageId})
+		utils.DoOrDie(err)
+
+		fmt.Printf("refetched: %+v\n", refetchedMessage)
+	}
+}
+
+func tableSizes(db *sql.DB) {
+	rowCounts, err := database.GetTableSizes(context.TODO(), db)
+	utils.DoOrDie(err)
+	fmt.Printf("row counts: %+v\n", rowCounts)
 }
