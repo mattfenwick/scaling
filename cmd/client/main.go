@@ -36,6 +36,16 @@ func main() {
 		apiUsers, err := myClient.SearchUsers(context.TODO(), &webserver.SearchUsersRequest{NamePattern: name, EmailPattern: email})
 		utils.DoOrDie(err)
 		fmt.Printf("api users: %s\n", json.MustMarshalToString(apiUsers))
+
+		for _, user := range dbUsers {
+			timelineMessages, err := database.GetUserTimeline(context.TODO(), db, user.UserId)
+			utils.DoOrDie(err)
+			fmt.Printf("timeline for user %s (%s, %s):\n%s\n\n", user.UserId.String(), user.Name, user.Email, json.MustMarshalToString(timelineMessages))
+
+			userMessages, err := database.GetUserMessages(context.TODO(), db, user.UserId)
+			utils.DoOrDie(err)
+			fmt.Printf("messages sent by user %s (%s, %s):\n%s\n\n", user.UserId.String(), user.Name, user.Email, json.MustMarshalToString(userMessages))
+		}
 	} else {
 		cli.Run()
 	}

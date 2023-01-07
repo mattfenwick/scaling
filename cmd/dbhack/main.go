@@ -79,13 +79,13 @@ func main() {
 			fmt.Printf("follower of %s (%s): %s (%s)\n", user.Name, user.UserId, follower.Name, follower.UserId)
 		}
 
-		userMessages, err := database.ReadMessagesForUser(ctx, db, user.UserId)
+		timelineMessages, err := database.GetUserTimeline(ctx, db, user.UserId)
 		utils.DoOrDie(err)
-		for _, message := range userMessages {
-			fmt.Printf("message for %s (%s): %d upvotes, %s (%s)\n", user.Name, user.UserId, message.UpvoteCount, message.Content, message.MessageId)
+		for _, message := range timelineMessages {
+			fmt.Printf("timeline message for %s (%s): %d upvotes, %s (%s)\n", user.Name, user.UserId, message.UpvoteCount, message.Content, message.MessageId)
 		}
-		if len(userMessages) == 0 {
-			fmt.Printf("no messages for %s\n", user.UserId)
+		if len(timelineMessages) == 0 {
+			fmt.Printf("no timeline messages for %s\n", user.UserId)
 		}
 	}
 
