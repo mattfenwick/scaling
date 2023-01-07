@@ -228,7 +228,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 	serveMux.Handle(MessagesPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
-				req, err := json.ParseString[GetMessagesRequest](body)
+				req, err := json.ParseString[GetMessagesRequest](body) // TODO wrong, use values
 				if err != nil {
 					return nil, err
 				}
@@ -243,7 +243,7 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 			},
 		})), "handle messages"))
 
-	serveMux.Handle(FollowersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+	serveMux.Handle(FollowPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
 			"POST": func(ctx context.Context, body string, values url.Values) (any, error) {
 				follow, err := json.ParseString[FollowRequest](body)
@@ -253,6 +253,17 @@ func SetupHTTPServer(responder Responder, tp trace.TracerProvider) *http.ServeMu
 				return responder.Follow(ctx, follow)
 			},
 		})), "handle follow"))
+
+	serveMux.Handle(FollowersPath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
+		map[string]func(ctx context.Context, body string, values url.Values) (any, error){
+			"GET": func(ctx context.Context, body string, values url.Values) (any, error) {
+				userId, err := uuid.Parse(values.Get("userid"))
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to parse uuid from '%s'", values.Get("userid"))
+				}
+				return responder.GetFollowers(ctx, &GetFollowersOfUserRequest{UserId: userId})
+			},
+		})), "handle followers"))
 
 	serveMux.Handle(UpvotePath, otelhttp.NewHandler(http.HandlerFunc(Handler(1000,
 		map[string]func(ctx context.Context, body string, values url.Values) (any, error){

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 
@@ -14,6 +15,8 @@ import (
 )
 
 func main() {
+	logrus.SetLevel(logrus.InfoLevel)
+
 	isSimple := len(os.Args) < 2 || os.Args[1] != "false"
 	if isSimple {
 		myClient := webserver.NewClient("http://scaling-example.local:80")
@@ -46,7 +49,76 @@ func main() {
 			utils.DoOrDie(err)
 			fmt.Printf("messages sent by user %s (%s, %s):\n%s\n\n", user.UserId.String(), user.Name, user.Email, json.MustMarshalToString(userMessages))
 		}
+
+		userTimelineAndMessageTest(db, myClient)
 	} else {
 		cli.Run()
+	}
+}
+
+func userTimelineAndMessageTest(db *sql.DB, client *webserver.Client) {
+	if db != nil {
+		// create user objects
+		user1 := database.NewUser("utamt1", "utamt1@scaling.local")
+		user2 := database.NewUser("utamt-two", "utamt-two@scaling.local")
+		// insert users
+		utils.DoOrDie(database.InsertUser(context.TODO(), db, user1))
+		utils.DoOrDie(database.InsertUser(context.TODO(), db, user2))
+		// have user2 follow user1
+		utils.DoOrDie(database.InsertFollower(context.TODO(), db, database.NewFollower(user1.UserId, user2.UserId)))
+		// create message objects
+		message1user1 := database.NewMessage(user1.UserId, "this is message 1, from user 1")
+		message2user1 := database.NewMessage(user1.UserId, "this is message 2, from user 1")
+		message1user2 := database.NewMessage(user2.UserId, "this is message 1, from user 2")
+		// insert messages
+		utils.DoOrDie(database.InsertMessage(context.TODO(), db, message1user1))
+		utils.DoOrDie(database.InsertMessage(context.TODO(), db, message2user1))
+		utils.DoOrDie(database.InsertMessage(context.TODO(), db, message1user2))
+
+		// look at timelines, messages
+		timeline1, err := database.GetUserTimeline(context.TODO(), db, user1.UserId)
+		utils.DoOrDie(err)
+		messages1, err := database.GetUserMessages(context.TODO(), db, user1.UserId)
+		utils.DoOrDie(err)
+		fmt.Printf("user1 (%s) timeline and messages:\n%s\n\n", user1.UserId.String(), json.MustMarshalToString(map[string]any{"timeline": timeline1, "messages": messages1}))
+
+		timeline2, err := database.GetUserTimeline(context.TODO(), db, user2.UserId)
+		utils.DoOrDie(err)
+		messages2, err := database.GetUserMessages(context.TODO(), db, user2.UserId)
+		utils.DoOrDie(err)
+		fmt.Printf("user2 (%s) timeline and messages:\n%s\n\n", user2.UserId.String(), json.MustMarshalToString(map[string]any{"timeline": timeline2, "messages": messages2}))
+	}
+
+	if client != nil {
+		// create user objects
+		user1, err := client.CreateUser(context.TODO(), &webserver.CreateUserRequest{Name: "utamt1-client", Email: "utamt1-client@scaling.local"})
+		utils.DoOrDie(err)
+		user2, err := client.CreateUser(context.TODO(), &webserver.CreateUserRequest{Name: "utamt-two-client", Email: "utamt-two-client@scaling.local"})
+		utils.DoOrDie(err)
+
+		// have user2 follow user1
+		_, err = client.FollowUser(context.TODO(), &webserver.FollowRequest{FolloweeUserId: user1.UserId, FollowerUserId: user2.UserId})
+		utils.DoOrDie(err)
+
+		// create message objects
+		_, err = client.CreateMessage(context.TODO(), &webserver.CreateMessageRequest{SenderUserId: user1.UserId, Content: "this is message 1, from user 1"})
+		utils.DoOrDie(err)
+		_, err = client.CreateMessage(context.TODO(), &webserver.CreateMessageRequest{SenderUserId: user1.UserId, Content: "this is message 2, from user 1"})
+		utils.DoOrDie(err)
+		_, err = client.CreateMessage(context.TODO(), &webserver.CreateMessageRequest{SenderUserId: user2.UserId, Content: "this is message 1, from user 2"})
+		utils.DoOrDie(err)
+
+		// look at timelines, messages
+		timeline1, err := client.GetUserTimeline(context.TODO(), &webserver.GetUserTimelineRequest{UserId: user1.UserId})
+		utils.DoOrDie(err)
+		messages1, err := client.GetUserMessages(context.TODO(), &webserver.GetUserMessagesRequest{UserId: user1.UserId})
+		utils.DoOrDie(err)
+		fmt.Printf("(client) user1 (%s) timeline and messages:\n%s\n\n", user1.UserId.String(), json.MustMarshalToString(map[string]any{"timeline": timeline1, "messages": messages1}))
+
+		timeline2, err := client.GetUserTimeline(context.TODO(), &webserver.GetUserTimelineRequest{UserId: user2.UserId})
+		utils.DoOrDie(err)
+		messages2, err := client.GetUserMessages(context.TODO(), &webserver.GetUserMessagesRequest{UserId: user2.UserId})
+		utils.DoOrDie(err)
+		fmt.Printf("(client) user2 (%s) timeline and messages:\n%s\n\n", user2.UserId.String(), json.MustMarshalToString(map[string]any{"timeline": timeline2, "messages": messages2}))
 	}
 }

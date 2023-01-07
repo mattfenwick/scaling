@@ -117,7 +117,7 @@ type CreateUpvoteResponse struct {
 }
 
 type GetFollowersOfUserRequest struct {
-	UserId string
+	UserId uuid.UUID
 	// TODO paginate
 }
 

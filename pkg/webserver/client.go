@@ -43,12 +43,12 @@ func (c *Client) SearchUsers(ctx context.Context, request *SearchUsersRequest) (
 }
 
 func (c *Client) GetUserTimeline(ctx context.Context, request *GetUserTimelineRequest) (*GetUserTimelineResponse, error) {
-	out, _, err := utils.RestyIssueRequest[GetUserTimelineResponse](ctx, c.Resty, "POST", UsersPath, request, nil)
+	out, _, err := utils.RestyIssueRequest[GetUserTimelineResponse](ctx, c.Resty, "POST", UserTimelinePath, request, nil)
 	return out, err
 }
 
 func (c *Client) GetUserMessages(ctx context.Context, request *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
-	out, _, err := utils.RestyIssueRequest[GetUserMessagesResponse](ctx, c.Resty, "POST", UsersPath, request, nil)
+	out, _, err := utils.RestyIssueRequest[GetUserMessagesResponse](ctx, c.Resty, "POST", UserMessagesPath, request, nil)
 	return out, err
 }
 
@@ -61,12 +61,12 @@ func (c *Client) CreateMessage(ctx context.Context, request *CreateMessageReques
 
 // follow/upvote
 
-func (c *Client) CreateFollower(ctx context.Context, request *FollowRequest) (*FollowResponse, error) {
+func (c *Client) FollowUser(ctx context.Context, request *FollowRequest) (*FollowResponse, error) {
 	out, _, err := utils.RestyIssueRequest[FollowResponse](ctx, c.Resty, "POST", FollowPath, request, nil)
 	return out, err
 }
 
-func (c *Client) CreateUpvote(ctx context.Context, request *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
+func (c *Client) UpvoteMessage(ctx context.Context, request *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
 	out, _, err := utils.RestyIssueRequest[CreateUpvoteResponse](ctx, c.Resty, "POST", UpvotePath, request, nil)
 	return out, err
 }
