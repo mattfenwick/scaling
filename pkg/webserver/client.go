@@ -35,6 +35,11 @@ func (c *Client) GetUsers(ctx context.Context, request *GetUsersRequest) (*GetUs
 	return out, err
 }
 
+func (c *Client) SearchUsers(ctx context.Context, request *SearchUsersRequest) (*SearchUsersResponse, error) {
+	out, _, err := utils.RestyIssueRequest[SearchUsersResponse](ctx, c.Resty, "POST", UsersPath, request, nil)
+	return out, err
+}
+
 func (c *Client) CreateMessage(ctx context.Context, request *CreateMessageRequest) (*CreateMessageResponse, error) {
 	out, _, err := utils.RestyIssueRequest[CreateMessageResponse](ctx, c.Resty, "POST", MessagePath, request, nil)
 	return out, err

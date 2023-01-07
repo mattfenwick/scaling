@@ -104,6 +104,17 @@ func GetUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
 	return ReadMany(ctx, db, loadUser, "select * from users")
 }
 
+func regexWrap(s string) string {
+	return "%" + s + "%"
+}
+
+func SearchUsers(ctx context.Context, db *sql.DB, namePattern string, emailPattern string) ([]*User, error) {
+	return ReadMany(ctx, db, loadUser,
+		"select * from users where name ilike $1 and email ilike $2",
+		regexWrap(namePattern),
+		regexWrap(emailPattern))
+}
+
 // Followers
 
 type Follower struct {

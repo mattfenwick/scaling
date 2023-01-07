@@ -129,19 +129,28 @@ func (m *Model) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserRespo
 	return &GetUserResponse{UserId: user.UserId, Name: user.Name, Email: user.Email}, nil
 }
 
+func mapUser(d *database.User) GetUserResponse {
+	return GetUserResponse{
+		UserId: d.UserId,
+		Name:   d.Name,
+		Email:  d.Email,
+	}
+}
+
 func (m *Model) GetUsers(ctx context.Context, req *GetUsersRequest) (*GetUsersResponse, error) {
 	users, err := database.GetUsers(ctx, m.db)
 	if err != nil {
 		return nil, err
 	}
-	f := func(d *database.User) GetUserResponse {
-		return GetUserResponse{
-			UserId: d.UserId,
-			Name:   d.Name,
-			Email:  d.Email,
-		}
+	return &GetUsersResponse{Users: slice.Map(mapUser, users)}, nil
+}
+
+func (m *Model) SearchUsers(ctx context.Context, req *SearchUsersRequest) (*SearchUsersResponse, error) {
+	users, err := database.SearchUsers(ctx, m.db, req.NamePattern, req.EmailPattern)
+	if err != nil {
+		return nil, err
 	}
-	return &GetUsersResponse{Users: slice.Map(f, users)}, nil
+	return &SearchUsersResponse{Users: slice.Map(mapUser, users)}, nil
 }
 
 func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*CreateMessageResponse, error) {
@@ -188,10 +197,6 @@ func (m *Model) GetUserTimeline(context.Context, *GetUserTimelineRequest) (*GetU
 }
 
 func (m *Model) GetUserMessages(context.Context, *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
-	return nil, errors.Errorf("unimplemented")
-}
-
-func (m *Model) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, errors.Errorf("unimplemented")
 }
 

@@ -47,9 +47,13 @@ type GetMessagesForUserResponse struct {
 }
 
 type SearchUsersRequest struct {
+	NamePattern  string
+	EmailPattern string
+	// TODO other stuff?
 }
 
 type SearchUsersResponse struct {
+	Users []GetUserResponse
 }
 
 type GetUserMessagesRequest struct {
