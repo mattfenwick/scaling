@@ -21,7 +21,7 @@ func Run() {
 	mode := os.Args[1]
 
 	config, err := json.ParseFile[Config](os.Args[2])
-	utils.DoOrDie(err)
+	utils.Die(err)
 
 	RunWithConfig(mode, config)
 }
@@ -31,28 +31,28 @@ func RunWithConfig(mode string, config *Config) {
 
 	tp, err, cleanup := telemetry.Setup(rootContext, config.LogLevel, mode, config.PrometheusPort, config.JaegerURL)
 	defer cleanup()
-	utils.DoOrDie(err)
+	utils.Die(err)
 
 	switch mode {
 	case "schema":
 		pg := config.Postgres
 
 		adminDb, err := database.Connect(pg.User, pg.Password, pg.Host, pg.AdminDatabase)
-		utils.DoOrDie(err)
-		utils.DoOrDie(database.CreateDatabaseIfNotExists(rootContext, adminDb, pg.Database))
+		utils.Die(err)
+		utils.Die(database.CreateDatabaseIfNotExists(rootContext, adminDb, pg.Database))
 
 		db, err := database.Connect(pg.User, pg.Password, pg.Host, pg.Database)
-		utils.DoOrDie(err)
-		utils.DoOrDie(database.InitializeSchema(rootContext, db))
+		utils.Die(err)
+		utils.Die(database.InitializeSchema(rootContext, db))
 	case "webserver":
 		pg := config.Postgres
 
 		adminDb, err := database.Connect(pg.User, pg.Password, pg.Host, pg.AdminDatabase)
-		utils.DoOrDie(err)
-		utils.DoOrDie(database.CreateDatabaseIfNotExists(rootContext, adminDb, pg.Database))
+		utils.Die(err)
+		utils.Die(database.CreateDatabaseIfNotExists(rootContext, adminDb, pg.Database))
 
 		db, err := database.Connect(pg.User, pg.Password, pg.Host, pg.Database)
-		utils.DoOrDie(err)
+		utils.Die(err)
 		webserver.Run(config.Webserver.ContainerPort, tp, db)
 	case "loadgen":
 		url := fmt.Sprintf("http://%s:%d", config.Webserver.Host, config.Webserver.ServicePort)
@@ -75,6 +75,6 @@ func RunVersionCommand() {
 		"GitSHA":    gitSHA,
 		"BuildTime": buildTime,
 	})
-	utils.DoOrDie(err)
+	utils.Die(err)
 	logrus.Infof("scaling version: \n%s\n", jsonString)
 }

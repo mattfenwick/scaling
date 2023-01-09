@@ -3,13 +3,14 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/mattfenwick/scaling/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"
-	"net/http"
-	"time"
 )
 
 func Setup(ctx context.Context, logLevel string, serviceName string, prometheusPort int, jaegerURL string) (trace.TracerProvider, error, func()) {
@@ -65,6 +66,6 @@ func SetupPrometheus(port int) {
 		},
 	))
 	go func() {
-		utils.DoOrDie(http.ListenAndServe(addr, serveMux))
+		utils.Die(http.ListenAndServe(addr, serveMux))
 	}()
 }

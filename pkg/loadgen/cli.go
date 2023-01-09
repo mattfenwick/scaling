@@ -23,6 +23,6 @@ func Cli(client *webserver.Client, config *Config) {
 	case "create-users":
 		uploader.CreateUsers(ctx, 10)
 	default:
-		utils.DoOrDie(errors.Errorf("invalid mode: %s", config.Mode))
+		utils.Die(errors.Errorf("invalid mode: %s", config.Mode))
 	}
 }

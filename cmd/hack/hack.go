@@ -3,31 +3,32 @@ package main
 import (
 	"debug/buildinfo"
 	"fmt"
-	"github.com/mattfenwick/collections/pkg/file"
-	"github.com/mattfenwick/collections/pkg/json"
-	"github.com/mattfenwick/scaling/pkg/utils"
-	"github.com/pkg/errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
+
+	"github.com/mattfenwick/collections/pkg/file"
+	"github.com/mattfenwick/collections/pkg/json"
+	"github.com/mattfenwick/scaling/pkg/utils"
+	"github.com/pkg/errors"
 )
 
 func PrintBuildInfo() {
 	name := os.Args[1]
 	info, err := buildinfo.ReadFile(name)
-	utils.DoOrDie(err)
+	utils.Die(err)
 	fmt.Printf("name %s\ninfo %s\n", name, json.MustMarshalToString(info))
 }
 
 func main() {
 	filename := "cmd/hack/hack.go"
 	src, err := file.ReadString(filename)
-	utils.DoOrDie(err)
+	utils.Die(err)
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, src, 0)
-	utils.DoOrDie(errors.Wrapf(err, "unable to ParseFile %s", filename))
+	utils.Die(errors.Wrapf(err, "unable to ParseFile %s", filename))
 
 	//fmt.Printf("%s\n\n", json.MustMarshalToString(f)) // hits cycle
 
@@ -48,5 +49,5 @@ func main() {
 		return true
 	})
 
-	utils.DoOrDie(ast.Print(fset, f))
+	utils.Die(ast.Print(fset, f))
 }

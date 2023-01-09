@@ -22,17 +22,17 @@ const (
 	where 
 		followers.followee_user_id = $1`
 
-	// TODO upvote counts
 	getUserMessagesTemplate = `
 	with upvote_counts as (
-		select message_id, -1 as upvotes
-		from messages
+		select message_id, count(*) as upvotes
+		from upvotes
+		group by message_id
 	  )
 	select
 		messages.message_id,
 		messages.sender_user_id,
 		messages.content,
-		upvote_counts.upvotes,
+		coalesce(upvote_counts.upvotes, 0),
 		messages.created_at
 	from messages
 	left join
@@ -42,7 +42,6 @@ const (
 	where
 		messages.sender_user_id = $1`
 
-	// TODO the upvote counts bit seems totally wrong ... ?
 	getUserTimelineTemplate = `
 	with userids as (
 		select 
@@ -62,7 +61,7 @@ const (
 		messages.message_id,
 		messages.sender_user_id,
 		messages.content,
-		upvote_counts.upvotes,
+		coalesce(upvote_counts.upvotes, 0),
 		messages.created_at
 	from messages
 	inner join 

@@ -19,11 +19,11 @@ func Run(port int, tp trace.TracerProvider, db *sql.DB) {
 	rootContext := context.Background()
 	ctx, cancel := context.WithTimeout(rootContext, 10*time.Second)
 	defer cancel()
-	utils.DoOrDie(database.InitializeSchema(ctx, db))
+	utils.Die(database.InitializeSchema(ctx, db))
 
 	model := NewModel(rootContext, tp, db)
 	serveMux := SetupHTTPServer(model, tp)
 
 	logrus.Infof("listening on port %s", addr)
-	utils.DoOrDie(http.ListenAndServe(addr, serveMux))
+	utils.Die(http.ListenAndServe(addr, serveMux))
 }
