@@ -20,16 +20,16 @@ import "context"
  - POST => create
  - GET => by message's uuid
 /messages
- - POST => fancy search (TODO)
+ - POST => fancy search
  - GET => naive list of messages
 
 /follow
  - POST
 /followers
- - GET => by user's uuid (TODO)
+ - GET => by user's uuid
 
 /upvote
- - POST (TODO)
+ - POST
 
 */
 

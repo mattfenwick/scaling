@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	readFollowersOfQueryTemplate = `
+	getFollowersOfQueryTemplate = `
 	select 
 		users.*
 	from followers
@@ -55,7 +55,7 @@ const (
 	  ),
 	  upvote_counts as (
 		select message_id, count(*) as upvotes
-		from messages
+		from upvotes
 		group by message_id
 	  )
 	select
@@ -188,6 +188,12 @@ func GetMessages(ctx context.Context, db *sql.DB) ([]*Message, error) {
 	return ReadMany(ctx, db, loadMessage, "select * from messages")
 }
 
+func SearchMessages(ctx context.Context, db *sql.DB, literalString string) ([]*Message, error) {
+	return ReadMany(ctx, db, loadMessage,
+		"select * from messages where position($1 in content) > 0",
+		literalString)
+}
+
 // Followers
 
 type Follower struct {
@@ -210,15 +216,15 @@ func InsertFollower(ctx context.Context, db *sql.DB, follower *Follower) error {
 	return errors.Wrapf(err, "unable to insert follower")
 }
 
-func ReadAllFollowers(ctx context.Context, db *sql.DB) ([]*Follower, error) {
+func GetFollowers(ctx context.Context, db *sql.DB) ([]*Follower, error) {
 	process := func(rows *sql.Rows, record *Follower) error {
 		return rows.Scan(&record.FolloweeUserId, &record.FollowerUserId, &record.CreatedAt)
 	}
 	return ReadMany(ctx, db, process, "select * from followers")
 }
 
-func ReadFollowersOf(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*User, error) {
-	return ReadMany(ctx, db, loadUser, readFollowersOfQueryTemplate, userId)
+func GetFollowersOfUser(ctx context.Context, db *sql.DB, userId uuid.UUID) ([]*User, error) {
+	return ReadMany(ctx, db, loadUser, getFollowersOfQueryTemplate, userId)
 }
 
 // Upvotes

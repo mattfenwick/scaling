@@ -117,7 +117,7 @@ func (m *Model) CreateUser(ctx context.Context, req *CreateUserRequest) (*Create
 	if err != nil {
 		return nil, err
 	}
-	return &CreateUserResponse{UserId: newUser.UserId}, nil
+	return &CreateUserResponse{Request: req, UserId: newUser.UserId}, nil
 }
 
 func (m *Model) GetUser(ctx context.Context, req *GetUserRequest) (*GetUserResponse, error) {
@@ -145,7 +145,7 @@ func (m *Model) GetUsers(ctx context.Context, req *GetUsersRequest) (*GetUsersRe
 	if err != nil {
 		return nil, err
 	}
-	return &GetUsersResponse{Users: slice.Map(mapUser, users)}, nil
+	return &GetUsersResponse{Users: slice.Map(mapUser, users), Request: req}, nil
 }
 
 func (m *Model) SearchUsers(ctx context.Context, req *SearchUsersRequest) (*SearchUsersResponse, error) {
@@ -153,7 +153,7 @@ func (m *Model) SearchUsers(ctx context.Context, req *SearchUsersRequest) (*Sear
 	if err != nil {
 		return nil, err
 	}
-	return &SearchUsersResponse{Users: slice.Map(mapUser, users)}, nil
+	return &SearchUsersResponse{Users: slice.Map(mapUser, users), Request: req}, nil
 }
 
 func mapTimelineMessage(m *database.TimelineMessage) GetMessageResponse {
@@ -170,7 +170,7 @@ func (m *Model) GetUserTimeline(ctx context.Context, req *GetUserTimelineRequest
 	if err != nil {
 		return nil, err
 	}
-	return &GetUserTimelineResponse{UserId: req.UserId, Messages: slice.Map(mapTimelineMessage, messages)}, nil
+	return &GetUserTimelineResponse{UserId: req.UserId, Messages: slice.Map(mapTimelineMessage, messages), Request: req}, nil
 }
 
 func (m *Model) GetUserMessages(ctx context.Context, req *GetUserMessagesRequest) (*GetUserMessagesResponse, error) {
@@ -178,7 +178,7 @@ func (m *Model) GetUserMessages(ctx context.Context, req *GetUserMessagesRequest
 	if err != nil {
 		return nil, err
 	}
-	return &GetUserMessagesResponse{UserId: req.UserId, Messages: slice.Map(mapTimelineMessage, messages)}, nil
+	return &GetUserMessagesResponse{UserId: req.UserId, Messages: slice.Map(mapTimelineMessage, messages), Request: req}, nil
 }
 
 // messages
@@ -189,7 +189,7 @@ func (m *Model) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	return &CreateMessageResponse{MessageId: newMessage.MessageId}, nil
+	return &CreateMessageResponse{MessageId: newMessage.MessageId, Request: req}, nil
 }
 
 func mapMessage(m *database.Message) GetMessageResponse {
@@ -217,11 +217,15 @@ func (m *Model) GetMessages(ctx context.Context, req *GetMessagesRequest) (*GetM
 	if err != nil {
 		return nil, err
 	}
-	return &GetMessagesResponse{Messages: slice.Map(mapMessage, messages)}, nil
+	return &GetMessagesResponse{Messages: slice.Map(mapMessage, messages), Request: req}, nil
 }
 
-func (m *Model) SearchMessages(context.Context, *SearchMessagesRequest) (*SearchMessagesResponse, error) {
-	return nil, errors.Errorf("unimplemented")
+func (m *Model) SearchMessages(ctx context.Context, req *SearchMessagesRequest) (*SearchMessagesResponse, error) {
+	messages, err := database.SearchMessages(ctx, m.db, req.LiteralString)
+	if err != nil {
+		return nil, err
+	}
+	return &SearchMessagesResponse{Messages: slice.Map(mapMessage, messages), Request: req}, nil
 }
 
 // follow/upvote
@@ -232,11 +236,15 @@ func (m *Model) Follow(ctx context.Context, req *FollowRequest) (*FollowResponse
 	if err != nil {
 		return nil, err
 	}
-	return &FollowResponse{}, nil
+	return &FollowResponse{Request: req}, nil
 }
 
-func (m *Model) GetFollowers(context.Context, *GetFollowersOfUserRequest) (*GetFollowersOfUserResponse, error) {
-	return nil, errors.Errorf("unimplemented")
+func (m *Model) GetFollowers(ctx context.Context, req *GetFollowersOfUserRequest) (*GetFollowersOfUserResponse, error) {
+	followers, err := database.GetFollowersOfUser(ctx, m.db, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	return &GetFollowersOfUserResponse{Followers: slice.Map(mapUser, followers), Request: req}, nil
 }
 
 func (m *Model) CreateUpvote(ctx context.Context, req *CreateUpvoteRequest) (*CreateUpvoteResponse, error) {
@@ -245,5 +253,5 @@ func (m *Model) CreateUpvote(ctx context.Context, req *CreateUpvoteRequest) (*Cr
 	if err != nil {
 		return nil, err
 	}
-	return &CreateUpvoteResponse{UpvoteId: newUpvote.UpvoteId}, nil
+	return &CreateUpvoteResponse{UpvoteId: newUpvote.UpvoteId, Request: req}, nil
 }

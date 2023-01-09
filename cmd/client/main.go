@@ -57,6 +57,7 @@ func main() {
 		}
 
 		tableSizes(db)
+		searchMessages(db)
 	} else {
 		cli.Run()
 	}
@@ -145,4 +146,10 @@ func tableSizes(db *sql.DB) {
 	rowCounts, err := database.GetTableSizes(context.TODO(), db)
 	utils.DoOrDie(err)
 	fmt.Printf("row counts: %+v\n", rowCounts)
+}
+
+func searchMessages(db *sql.DB) {
+	messages, err := database.SearchMessages(context.TODO(), db, "banan")
+	utils.DoOrDie(err)
+	fmt.Printf("searched messages, found %d:\n%s\n", len(messages), json.MustMarshalToString(messages))
 }

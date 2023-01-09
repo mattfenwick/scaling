@@ -10,7 +10,8 @@ type CreateUserRequest struct {
 }
 
 type CreateUserResponse struct {
-	UserId uuid.UUID
+	UserId  uuid.UUID
+	Request *CreateUserRequest
 }
 
 type GetUserRequest struct {
@@ -28,7 +29,8 @@ type GetUsersRequest struct {
 }
 
 type GetUsersResponse struct {
-	Users []GetUserResponse
+	Users   []GetUserResponse
+	Request *GetUsersRequest
 }
 
 type SearchUsersRequest struct {
@@ -38,7 +40,8 @@ type SearchUsersRequest struct {
 }
 
 type SearchUsersResponse struct {
-	Users []GetUserResponse
+	Users   []GetUserResponse
+	Request *SearchUsersRequest
 }
 
 type GetUserMessagesRequest struct {
@@ -49,6 +52,7 @@ type GetUserMessagesRequest struct {
 type GetUserMessagesResponse struct {
 	UserId   uuid.UUID
 	Messages []GetMessageResponse
+	Request  *GetUserMessagesRequest
 }
 
 type GetUserTimelineRequest struct {
@@ -59,6 +63,7 @@ type GetUserTimelineRequest struct {
 type GetUserTimelineResponse struct {
 	UserId   uuid.UUID
 	Messages []GetMessageResponse
+	Request  *GetUserTimelineRequest
 }
 
 // messages
@@ -70,6 +75,7 @@ type CreateMessageRequest struct {
 
 type CreateMessageResponse struct {
 	MessageId uuid.UUID
+	Request   *CreateMessageRequest
 }
 
 type GetMessageRequest struct {
@@ -88,13 +94,16 @@ type GetMessagesRequest struct {
 
 type GetMessagesResponse struct {
 	Messages []GetMessageResponse
+	Request  *GetMessagesRequest
 }
 
 type SearchMessagesRequest struct {
+	LiteralString string
 }
 
 type SearchMessagesResponse struct {
 	Messages []GetMessageResponse
+	Request  *SearchMessagesRequest
 }
 
 // follow/upvote
@@ -105,6 +114,7 @@ type FollowRequest struct {
 }
 
 type FollowResponse struct {
+	Request *FollowRequest
 }
 
 type CreateUpvoteRequest struct {
@@ -114,6 +124,7 @@ type CreateUpvoteRequest struct {
 
 type CreateUpvoteResponse struct {
 	UpvoteId uuid.UUID
+	Request  *CreateUpvoteRequest
 }
 
 type GetFollowersOfUserRequest struct {
@@ -122,9 +133,6 @@ type GetFollowersOfUserRequest struct {
 }
 
 type GetFollowersOfUserResponse struct {
-	Followers []struct {
-		UserId uuid.UUID
-		Name   string
-		Email  string
-	}
+	Followers []GetUserResponse
+	Request   *GetFollowersOfUserRequest
 }
